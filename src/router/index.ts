@@ -5,6 +5,7 @@ const routes = [
   { path: '/', redirect: '/signin' },
   { path: '/signin', component: SignIn },
   { path: '/signup', component: SignUp },
+  { path: '/signup/success', component: () => import('@/views/SignupSuccess.vue') },
 ]
 
 export const router = createRouter({

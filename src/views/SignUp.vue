@@ -1,12 +1,34 @@
 <script setup lang="ts">
 import CommonLayout from '@/views/layouts/CommonLayout.vue'
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { signup } from '@/api/auth'
+
+const router = useRouter()
 
 const email = ref('')
+const userName = ref('')
 const password = ref('')
+const loading = ref(false)
+const errorMessage = ref('')
 
-const submit = () => {
-  console.log(email.value, password.value)
+const submit = async () => {
+  errorMessage.value = ''
+  loading.value = true
+
+  try {
+    await signup(email.value, userName.value, password.value)
+
+    // 成功したらサインアップ完了画面へ
+    router.push('/signup/success')
+  } catch (error: any) {
+    console.error(error)
+
+    errorMessage.value =
+      error.response?.data?.message || 'サインアップに失敗しました'
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -16,12 +38,22 @@ const submit = () => {
       <div class="card">
         <h2>Sign Up</h2>
 
-        <input v-model="email" type="email" placeholder="Email" />
+        <input v-model="email" type="mailAddress" placeholder="Email" />
+        <input v-model="userName" type="userName" placeholder="User Name" />
         <input v-model="password" type="password" placeholder="Password" />
 
-        <button @click="submit">Sign Up</button>
+        <button @click="submit" :disabled="loading">
+          {{ loading ? '登録中...' : 'Sign Up' }}
+        </button>
+        <p v-if="errorMessage" class="error">
+          {{ errorMessage }}
+        </p>
       </div>
-    </div>
+      <p class="signin-text">
+        アカウントをお持ちの方は
+        <router-link to="/signin">サインイン</router-link>
+      </p>
+     </div>
   </CommonLayout>
 </template>
 
@@ -31,6 +63,22 @@ const submit = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.signin-text {
+  margin-top: 16px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.signin-text a {
+  color: #14b8a6;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.signin-text a:hover {
+  text-decoration: underline;
 }
 
 .card {
@@ -77,5 +125,11 @@ button:hover {
   background: #0f766e;
   transform: translateY(-2px);
 }
+.error {
+  color: #dc2626;
+  font-size: 14px;
+  text-align: center;
+}
+
 </style>
 

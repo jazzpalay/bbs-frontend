@@ -2,7 +2,6 @@
 import CommonLayout from '@/views/layouts/CommonLayout.vue'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { signin } from '@/api/auth'
 
 const router = useRouter()
 

@@ -6,10 +6,33 @@ import { signin } from '@/api/auth'
 
 const router = useRouter()
 
+
+
 const keyword = ref('')
 const selectedTag = ref('')
 const startDate = ref('')
 const endDate = ref('')
+
+///////////////// 仮のデータ//////////////
+const userName = ref('')
+const tags = ref([
+  { id: '1', name: 'タグ1' },
+  { id: '2', name: 'タグ2' },
+  { id: '3', name: 'タグ3' },
+])
+
+const goToCreate = () => {
+  router.push('/create')
+}
+
+const filteredLogs = ref([
+  { id: '1', title: 'ログ1', description: '内容1', createdAt: '2024-06-01' },
+  { id: '2', title: 'ログ2', description: '内容2', createdAt: '2024-06-02' },
+  { id: '3', title: 'ログ3', description: '内容3', createdAt: '2024-06-03' },
+])
+
+///////////////////////////
+
 
 
 </script>

@@ -15,7 +15,7 @@ export const router = createRouter({
   routes,
 })
 
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, _, next) => {
   const authStore = useAuthStore()
 
   if (to.meta.requiresAuth) {

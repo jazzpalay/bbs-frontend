@@ -1,12 +1,55 @@
 <script setup lang="ts">
 import CommonLayout from '@/views/layouts/CommonLayout.vue'
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { signin } from '@/api/auth'
+import { refreshToken } from '@/api/auth'
+import { useAuthStore } from '@/stores/auth.store'
+
+const router = useRouter()
 
 const email = ref('')
 const password = ref('')
+const loading = ref(false)
+const errorMessage = ref('')
 
-const submit = () => {
-  console.log(email.value, password.value)
+// 画面表示時の処理
+onMounted(async () => {
+  const authStore = useAuthStore()
+
+  // すでにaccessTokenあるなら即リダイレクト
+  if (authStore.accessToken) {
+    router.push('/dashboard')
+    return
+  }
+
+  try {
+    const newAccessToken = await refreshToken()
+    authStore.setToken(newAccessToken)
+    router.push('/dashboard')
+  } catch (e) {
+    // refresh失敗 → 何もしない（サインイン画面表示）
+  }
+})
+
+//ログインボタン
+const submit = async () => {
+  errorMessage.value = ''
+  loading.value = true
+
+  try {
+    await signin(email.value, password.value)
+
+    // 成功したらダッシュボード画面へ
+    router.push('/dashboard')
+  } catch (error: any) {
+    console.error(error)
+
+    errorMessage.value =
+      error.response?.data?.message || 'サインインに失敗しました'
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -19,7 +62,12 @@ const submit = () => {
         <input v-model="email" type="email" placeholder="Email" />
         <input v-model="password" type="password" placeholder="Password" />
 
-        <button @click="submit">Sign In</button>
+        <button @click="submit" :disabled="loading">
+          {{ loading ? 'サインイン中...' : 'Sign In' }}
+        </button>
+        <p v-if="errorMessage" class="error">
+          {{ errorMessage }}
+        </p>
 
       </div>
       <p class="signup-text">
@@ -97,5 +145,12 @@ button:hover {
   background: #0f766e;
   transform: translateY(-2px);
 }
+
+.error {
+  color: #dc2626;
+  font-size: 14px;
+  text-align: center;
+}
+
 </style>
 

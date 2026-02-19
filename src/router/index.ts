@@ -1,14 +1,38 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import SignIn from "@/views/SignIn.vue";
-import SignUp from "@/views/SignUp.vue";
+import { useAuthStore } from '@/stores/auth.store'
+import { refreshToken } from '@/api/auth'
 const routes = [
   { path: '/', redirect: '/signin' },
-  { path: '/signin', component: SignIn },
-  { path: '/signup', component: SignUp },
+  { path: '/signin', component: () => import('@/views/SignIn.vue') },
+  { path: '/signup', component: () => import('@/views/SignUp.vue') },
   { path: '/signup/success', component: () => import('@/views/SignupSuccess.vue') },
+  { path: '/signup/success', component: () => import('@/views/SignupSuccess.vue') },
+  { path: '/dashboard', component: () => import('@/views/DashboardView.vue'), meta: { requiresAuth: true } },
 ]
 
 export const router = createRouter({
   history: createWebHistory(),
   routes,
 })
+
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore()
+
+  if (to.meta.requiresAuth) {
+    if (authStore.accessToken) {
+      next()
+      return
+    }
+
+    try {
+      const newToken = await refreshToken()
+      authStore.setToken(newToken)
+      next()
+    } catch {
+      next('/signin')
+    }
+  } else {
+    next()
+  }
+})
+

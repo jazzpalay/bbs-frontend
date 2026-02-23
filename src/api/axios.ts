@@ -34,6 +34,12 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config
     const authStore = useAuthStore()
 
+    const isAuthApi = originalRequest.url?.includes('/api/v1/users/auth/')
+    // auth系 API なら何もしない
+    if (isAuthApi) {
+      return Promise.reject(error)
+    }
+
     // 401 & リトライ未実施のみ
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true

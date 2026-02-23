@@ -3,6 +3,7 @@ import CommonLayout from '@/views/layouts/CommonLayout.vue'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { signup } from '@/api/auth'
+import { onMounted, onUnmounted } from 'vue'
 
 const router = useRouter()
 
@@ -11,6 +12,15 @@ const userName = ref('')
 const password = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
+
+//スクロール禁止
+onMounted(() => {
+  document.body.style.overflow = 'hidden'
+})
+//スクロール禁止解除
+onUnmounted(() => {
+  document.body.style.overflow = ''
+})
 
 const submit = async () => {
   errorMessage.value = ''
@@ -43,7 +53,7 @@ const submit = async () => {
         <input v-model="password" type="password" placeholder="Password" />
 
         <button @click="submit" :disabled="loading">
-          {{ loading ? '登録中...' : 'Sign Up' }}
+          {{ loading ? '登録中...' : 'サインアップ' }}
         </button>
         <p v-if="errorMessage" class="error">
           {{ errorMessage }}
@@ -58,6 +68,11 @@ const submit = async () => {
 </template>
 
 <style scoped>
+:deep(.right) {
+  display: flex;
+  justify-content: center;
+  align-items: center !important;
+}
 .auth-container {
   width: min(90%, 420px);
   display: flex;

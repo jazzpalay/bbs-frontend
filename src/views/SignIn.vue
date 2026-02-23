@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import CommonLayout from '@/views/layouts/CommonLayout.vue'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { signin } from '@/api/auth'
 import { refreshToken } from '@/api/auth'
@@ -12,10 +12,12 @@ const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
+const authStore = useAuthStore()
 
 // 画面表示時の処理
 onMounted(async () => {
-  const authStore = useAuthStore()
+  //スクロール禁止
+  document.body.style.overflow = 'hidden'
 
   // すでにaccessTokenあるなら即リダイレクト
   if (authStore.accessToken) {
@@ -29,7 +31,13 @@ onMounted(async () => {
     router.push('/dashboard')
   } catch (e) {
     // refresh失敗 → 何もしない（サインイン画面表示）
+    console.log('Token refresh failed:', e)
   }
+})
+
+//スクロール禁止解除
+onUnmounted(() => {
+  document.body.style.overflow = ''
 })
 
 //ログインボタン
@@ -38,7 +46,8 @@ const submit = async () => {
   loading.value = true
 
   try {
-    await signin(email.value, password.value)
+    const newAccessToken = await signin(email.value, password.value)
+    authStore.setToken(newAccessToken.data.jwt)
 
     // 成功したらダッシュボード画面へ
     router.push('/dashboard')
@@ -63,7 +72,7 @@ const submit = async () => {
         <input v-model="password" type="password" placeholder="Password" />
 
         <button @click="submit" :disabled="loading">
-          {{ loading ? 'サインイン中...' : 'Sign In' }}
+          {{ loading ? 'サインイン中...' : 'サインイン' }}
         </button>
         <p v-if="errorMessage" class="error">
           {{ errorMessage }}
@@ -78,6 +87,12 @@ const submit = async () => {
   </CommonLayout>
 </template>
 <style scoped>
+:deep(.right) {
+  display: flex;
+  justify-content: center;
+  align-items: center !important;
+}
+
 .auth-container {
   width: min(90%, 420px);
   display: flex;
@@ -109,7 +124,7 @@ const submit = async () => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
 .card h2 {
@@ -127,7 +142,7 @@ input {
 
 input:focus {
   border-color: #14b8a6;
-  box-shadow: 0 0 0 3px rgba(20,184,166,0.2);
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2);
 }
 
 button {
@@ -151,6 +166,4 @@ button:hover {
   font-size: 14px;
   text-align: center;
 }
-
 </style>
-

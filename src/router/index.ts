@@ -26,7 +26,9 @@ router.beforeEach(async (to, _, next) => {
 
     try {
       const newToken = await refreshToken()
+      console.log('newToken:', newToken)
       authStore.setToken(newToken)
+      console.log('store after set:', authStore.accessToken)
       next()
     } catch {
       next('/signin')

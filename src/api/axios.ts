@@ -34,7 +34,7 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config
     const authStore = useAuthStore()
 
-    const isAuthApi = originalRequest.url?.includes('/api/v1/users/auth/')
+    const isAuthApi = originalRequest.url?.includes('/api/v1/auth/')
     // auth系 API なら何もしない
     if (isAuthApi) {
       return Promise.reject(error)

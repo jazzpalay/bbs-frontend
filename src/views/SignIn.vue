@@ -16,9 +16,7 @@ const authStore = useAuthStore()
 
 // 画面表示時の処理
 onMounted(async () => {
-  //スクロール禁止
-  document.body.style.overflow = 'hidden'
-
+  
   // すでにaccessTokenあるなら即リダイレクト
   if (authStore.accessToken) {
     router.push('/dashboard')

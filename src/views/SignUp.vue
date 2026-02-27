@@ -3,7 +3,6 @@ import CommonLayout from '@/views/layouts/CommonLayout.vue'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { signup } from '@/api/auth'
-import { onMounted, onUnmounted } from 'vue'
 
 const router = useRouter()
 
@@ -12,15 +11,6 @@ const userName = ref('')
 const password = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
-
-//スクロール禁止
-onMounted(() => {
-  document.body.style.overflow = 'hidden'
-})
-//スクロール禁止解除
-onUnmounted(() => {
-  document.body.style.overflow = ''
-})
 
 const submit = async () => {
   errorMessage.value = ''

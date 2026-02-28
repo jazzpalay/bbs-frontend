@@ -2,19 +2,36 @@
 import CommonLayout from '@/views/layouts/CommonLayout.vue'
 import { onMounted, ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+import { getTags, type Tag } from '@/api/tag'
+import { getUserProfile } from '@/api/user'
 
 const logCards = ref<HTMLElement[]>([])
 const router = useRouter()
+const userName = ref('')
 const keyword = ref('')
 const selectedTags = ref<string[]>([])
 const tagWrapper = ref<HTMLElement | null>(null)
 const isTagPanelOpen = ref(false)
 const startDate = ref('')
 const endDate = ref('')
-
+const tags = ref<Tag[]>([])
 let observer: IntersectionObserver
 
-onMounted(() => {
+onMounted(async () => {
+
+  try {
+    const [tagRes, userRes] = await Promise.all([
+      getTags(),
+      getUserProfile()
+    ])
+
+    tags.value = tagRes.list
+    userName.value = userRes.userName
+
+  } catch (e) {
+    console.error('初期データ取得失敗', e)
+  }
+
   observer = new IntersectionObserver(
     (entries) => {
       entries.forEach(entry => {
@@ -33,6 +50,11 @@ onMounted(() => {
   )
 
   observeCards()
+  document.addEventListener('click', handleClickOutside)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 
 const observeCards = async () => {
@@ -51,31 +73,6 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 }
 
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
-
-
-
-///////////////// 仮のデータ//////////////
-const userName = ref('Jazzpalay')
-const tags = ref([
-  { id: '1', name: 'AWS' },
-  { id: '2', name: 'バックエンド関係' },
-  { id: '3', name: 'タグ3' },
-  { id: '3', name: 'タグ3' },
-  { id: '3', name: 'タグ3' },
-  { id: '3', name: 'タグ3' },
-  { id: '3', name: 'タグ3' },
-  { id: '3', name: 'タグ3' },
-  { id: '3', name: 'タグ3' },
-  { id: '4', name: 'タグ3' },
-])
-
 const goToCreate = () => {
   router.push('/create')
 }
@@ -89,6 +86,33 @@ const toggleTag = (tag: string) => {
     selectedTags.value = selectedTags.value.filter(t => t !== tag)
   } else {
     selectedTags.value.push(tag)
+  }
+}
+
+//指定されたhexをalphaの透明度でrgbaに変換して返す
+const hexToRgba = (hex: string, alpha: number) => {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+//タグの色設定
+const getTagStyle = (tag: Tag) => {
+  const isActive = selectedTags.value.includes(tag.tagName)
+
+  return {
+    backgroundColor: isActive
+      ? tag.tagColor
+      : hexToRgba(tag.tagColor, 0.25), // ← 背景だけ薄く
+    color: isActive
+      ? '#ffffff'
+      : tag.tagColor, // ← 文字はタグ色で濃く
+    border: `2px solid ${tag.tagColor}`,
+    boxShadow: isActive
+      ? `0 6px 14px ${hexToRgba(tag.tagColor, 0.4)}`
+      : 'none',
+    transform: isActive ? 'scale(1.05)' : 'scale(1)',
   }
 }
 
@@ -134,12 +158,20 @@ watch(filteredLogs, () => {
       <div class="card header-card">
         <div class="header-content">
           <div>
-            <h3>Hello {{ userName }}</h3>
+            <h3 class="greeting">
+              <span class="hello-text">Hello</span>
+              <span class="user-name">{{ userName }}</span>
+            </h3>
             <p class="sub">今日の作業を追加</p>
           </div>
-          <button @click="goToCreate">
-            ＋ ログ追加
-          </button>
+          <div class="header-buttons">
+            <button>
+              タグ管理
+            </button>
+            <button @click="goToCreate">
+              ＋ ログ追加
+            </button>
+          </div>
         </div>
       </div>
 
@@ -159,9 +191,10 @@ watch(filteredLogs, () => {
                 全解除
               </button>
             </div>
-            <span v-for="tag in tags" :key="tag.id" :class="['filter-tag', { active: selectedTags.includes(tag.name) }]"
-              @click.stop="toggleTag(tag.name)">
-              {{ tag.name }}
+            <span v-for="tag in tags" :key="tag.tagId"
+              :class="['filter-tag', { active: selectedTags.includes(tag.tagName) }]" :style="getTagStyle(tag)"
+              @click.stop="toggleTag(tag.tagName)">
+              {{ tag.tagName }}
             </span>
           </div>
         </div>
@@ -227,13 +260,23 @@ watch(filteredLogs, () => {
 }
 
 .header-card h3 {
-  font-size: clamp(16px, 1.5vw, 18px);
+  font-size: clamp(11px, 3.5vw, 15px);
+}
+
+.header-card p {
+  font-size: clamp(11px, 3.5vw, 15px);
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
+}
+
+.header-content>div:first-child {
+  flex: 1;
+  min-width: 0;
 }
 
 .sub {
@@ -254,12 +297,35 @@ watch(filteredLogs, () => {
   background: white;
 }
 
+.greeting {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 @media (min-width: 768px) {
   .search-card {
     display: grid;
     grid-template-columns: 3fr 1fr 1fr 1fr;
     gap: 16px;
     align-items: stretch;
+  }
+
+  .tag-summary {
+    font-size: clamp(1px, 1.4vw, 15px);
+  }
+}
+@media (max-width: 500px) {
+  .greeting {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .tag-panel {
+    right: 0;
+    left: auto;
+    width: calc(100vw - 24px);
+    max-width: 420px;
   }
 }
 
@@ -279,12 +345,13 @@ select:focus {
 }
 
 button {
-  padding: 12px 18px;
-  border-radius: 12px;
+  padding: clamp(6px, 2vw, 12px) clamp(10px, 3vw, 18px);
+  border-radius: clamp(10px, 1.5vw, 14px);
   border: none;
   background: #14b8a6;
   color: white;
   font-weight: bold;
+  font-size: clamp(11px, 3.5vw, 15px);
   cursor: pointer;
   transition: 0.2s;
 }
@@ -354,7 +421,6 @@ button:hover {
 
 .tag-summary.active {
   background: #14b8a6;
-  /* ← あなたのテーマカラーに変更 */
   color: white;
   border-color: #14b8a6;
 }
@@ -365,24 +431,25 @@ button:hover {
   z-index: 999;
   top: calc(100% + 6px);
   left: 0;
-  width: 420px;
+  right: auto;
+  width: min(95vw, 420px);
   max-height: 260px;
   overflow-y: auto;
   background: white;
   border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-  padding: 16px; 
-  
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+
   /* タグ同士を並べるための設定を追加 */
   display: flex;
-  flex-wrap: wrap; 
-  gap: 10px 8px; 
+  flex-wrap: wrap;
+  gap: 10px 8px;
   align-content: flex-start;
 }
 
 /* ヘッダー（全解除ボタン）がタグの並びを邪魔しないように調整 */
 .tag-panel-header {
-  width: 100%; 
+  width: 100%;
   display: flex;
   justify-content: flex-end;
   margin-bottom: 4px;
@@ -402,15 +469,18 @@ button:hover {
 }
 
 .filter-tag {
-  display: inline-block; /* 幅と高さを認識させる */
-  padding: 8px 16px;    /* 上下を少し厚く、左右もしっかり確保 */
+  display: inline-block;
+  /* 幅と高さを認識させる */
+  padding: 8px 16px;
+  /* 上下を少し厚く、左右もしっかり確保 */
   border-radius: 999px;
   background: #f1f5f9;
   color: #475569;
-  font-size: 13px;
+  font-size: clamp(9px, 3.5vw, 15px);
   cursor: pointer;
   transition: all 0.2s ease;
-  border: 1px solid transparent; /* 選択時にガタつかないよう枠線を予約 */
+  border: 1px solid transparent;
+  /* 選択時にガタつかないよう枠線を予約 */
 }
 
 .filter-tag:hover {
@@ -421,7 +491,7 @@ button:hover {
   background: #14b8a6;
   color: white;
   /* 選択中であることを強調する場合 */
-  box-shadow: 0 4px 10px rgba(20, 184, 166, 0.2); 
+  box-shadow: 0 4px 10px rgba(20, 184, 166, 0.2);
 }
 
 .log-date {
@@ -474,5 +544,23 @@ button:hover {
   gap: 8px;
 }
 
+.header-buttons {
+  display: flex;
+  gap: clamp(8px, 2vw, 16px);
+  align-items: center;
+}
 
+.header-buttons button:first-child {
+  background: white;
+  color: #14b8a6;
+  border: 2px solid #14b8a6;
+  transition: all 0.2s ease;
+}
+
+.header-buttons button:first-child:hover {
+  background: #F1F5F9;
+  border-color: #0f766e;
+  color: #0f766e;
+  transform: translateY(-2px);
+}
 </style>

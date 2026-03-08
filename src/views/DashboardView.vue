@@ -120,6 +120,10 @@ const clearTags = () => {
   selectedTags.value = []
 }
 
+const goToManage = () => {
+  router.push('/TagManagement')
+}
+
 const logs = ref([
   { id: '1', title: 'ログ1', tags: ['タグ1', 'タグ2'], createdAt: '2024-06-01' },
   { id: '2', title: 'ログ2', tags: ['タグ2'], createdAt: '2024-06-02' },
@@ -164,7 +168,7 @@ watch(filteredLogs, () => {
             </h3>
             <p class="sub">今日の作業を追加</p>
           </div>
-          <div class="header-buttons">
+          <div class="header-buttons" @click="goToManage">
             <button>
               タグ管理
             </button>
@@ -252,7 +256,7 @@ watch(filteredLogs, () => {
 }
 
 .header-card {
-  padding: 0.5px 20px;
+  padding: 5px 20px;
   position: sticky;
   top: 0;
   z-index: 20;
@@ -314,6 +318,7 @@ watch(filteredLogs, () => {
   .tag-summary {
     font-size: clamp(1px, 1.4vw, 15px);
   }
+  
 }
 @media (max-width: 500px) {
   .greeting {
@@ -322,11 +327,18 @@ watch(filteredLogs, () => {
     gap: 2px;
   }
   .tag-panel {
-    right: 0;
-    left: auto;
-    width: calc(100vw - 24px);
-    max-width: 420px;
+    position: fixed;
+    top: 160px;
+    left: 12px;
+    right: 12px;
+    width: auto;
   }
+
+  .search-card {
+    top: 125px;
+  }
+
+  
 }
 
 input,
@@ -430,21 +442,22 @@ button:hover {
   position: absolute;
   z-index: 999;
   top: calc(100% + 6px);
-  left: 0;
-  right: auto;
+
+  left: 50%;
+  transform: translateX(-50%);
+
   width: min(95vw, 420px);
   max-height: 260px;
   overflow-y: auto;
+
   background: white;
   border-radius: 16px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   padding: 16px;
 
-  /* タグ同士を並べるための設定を追加 */
   display: flex;
   flex-wrap: wrap;
   gap: 10px 8px;
-  align-content: flex-start;
 }
 
 /* ヘッダー（全解除ボタン）がタグの並びを邪魔しないように調整 */

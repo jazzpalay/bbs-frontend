@@ -490,10 +490,11 @@ select:focus {
 }
 
 .back-link {
-    color: var(--theme-color);
     text-decoration: none;
-    font-weight: 500;
-    transition: 0.2s;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 14px;
+    transition: color 0.2s;
 }
 
 .back-link:hover {

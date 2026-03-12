@@ -74,7 +74,7 @@ const handleClickOutside = (event: MouseEvent) => {
 }
 
 const goToCreate = () => {
-  router.push('/create')
+  router.push('/LogCreation')
 }
 
 const toggleTagPanel = () => {
@@ -168,8 +168,8 @@ watch(filteredLogs, () => {
             </h3>
             <p class="sub">今日の作業を追加</p>
           </div>
-          <div class="header-buttons" @click="goToManage">
-            <button>
+          <div class="header-buttons">
+            <button @click="goToManage">
               タグ管理
             </button>
             <button @click="goToCreate">
@@ -493,7 +493,6 @@ button:hover {
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid transparent;
-  /* 選択時にガタつかないよう枠線を予約 */
 }
 
 .filter-tag:hover {

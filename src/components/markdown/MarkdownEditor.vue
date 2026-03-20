@@ -1,41 +1,40 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from "vue"
-
-defineEmits(['typing'])
+import { ref } from 'vue'
 
 const content = defineModel<string>()
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
-const resize = () => {
-  const el = textareaRef.value
-  if (!el) return
+const emit = defineEmits<{
+  'scroll': [scrollTop: number]
+}>()
 
-  el.style.height = "auto"
-  el.style.height = el.scrollHeight + "px"
+const handleScroll = (e: Event) => {
+  const textarea = e.target as HTMLTextAreaElement
+  emit('scroll', textarea.scrollTop)
 }
-
-onMounted(resize)
-watch(content, resize)
 </script>
 
 <template>
-  <textarea
-    v-model="content"
+  <textarea 
     ref="textareaRef"
+    v-model="content" 
     class="editor"
-    @input="$emit('typing')"
-    placeholder="Markdownを書いてください"
+    @scroll="handleScroll"
+    placeholder="Markdownを書いてください" 
   />
 </template>
 
 <style scoped>
-.editor{
-  width:100%;
-  min-height:100%;
-  padding:16px;
-  font-family:monospace;
-  resize:none;
-  overflow:hidden;
-  box-sizing:border-box;
+.editor {
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  font-family: monospace;
+  border: none;
+  outline: none;
+  resize: none;
+  box-sizing: border-box;
+  overflow: auto;
+  display: block;
 }
 </style>

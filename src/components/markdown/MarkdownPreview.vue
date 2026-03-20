@@ -64,6 +64,11 @@ watch(renderedMarkdown, async () => {
 
 <style>
 
+.markdown-body {
+  width: 100%;
+  margin-bottom: 40px;  /* 下部に余白を作る */
+}
+
 .markdown-body pre {
   position: relative;
   background: #1e1e1e;

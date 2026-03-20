@@ -221,6 +221,14 @@ watch(filteredLogs, () => {
           </div>
           <div class="log-tags">
             <span v-for="tag in log.tags" :key="tag" class="tag">{{ tag }}</span>
+            <div class="log-actions">
+              <button class="action-btn edit" title="更新" @click.stop="handleEdit(log)">
+                <span class="material-symbols-outlined">edit</span>
+              </button>
+              <button class="action-btn delete" title="削除" @click.stop="handleDelete(log.id)">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </div>
           </div>
         </div>
       </TransitionGroup>
@@ -236,7 +244,7 @@ watch(filteredLogs, () => {
   margin: 10px auto 120px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 15px;
 }
 
 :deep(.right) {
@@ -252,11 +260,11 @@ watch(filteredLogs, () => {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  margin-bottom: 10px;
 }
 
 .header-card {
-  padding: 5px 20px;
+  padding: 2px 20px;
   position: sticky;
   top: 0;
   z-index: 20;
@@ -289,12 +297,12 @@ watch(filteredLogs, () => {
 }
 
 .search-card {
-  padding: 16px 24px;
+  padding: 10px 24px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   position: sticky;
-  top: 102px;
+  top: 105px;
   /* Headerカードの高さを考慮 */
   z-index: 10;
   /* Headerより下に */
@@ -307,38 +315,58 @@ watch(filteredLogs, () => {
   gap: 6px;
 }
 
-@media (min-width: 768px) {
-  .search-card {
-    display: grid;
-    grid-template-columns: 3fr 1fr 1fr 1fr;
-    gap: 16px;
-    align-items: stretch;
-  }
-
-  .tag-summary {
-    font-size: clamp(1px, 1.4vw, 15px);
-  }
-  
+.log-card {
+  cursor: pointer;
+  position: relative; 
+  padding-bottom: 20px
 }
-@media (max-width: 500px) {
-  .greeting {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-  }
-  .tag-panel {
-    position: fixed;
-    top: 160px;
-    left: 12px;
-    right: 12px;
-    width: auto;
-  }
 
-  .search-card {
-    top: 125px;
-  }
+.log-actions {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+}
 
-  
+/* アイコンボタン共通設定 */
+.action-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%; /* 正円にする */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+/* 更新ボタン（緑系） */
+.action-btn.edit {
+  color: #14b8a6;
+}
+.action-btn.edit:hover {
+  background: #f0fdfa;
+  border-color: #14b8a6;
+  color: #0f766e;
+}
+
+/* 削除ボタン（赤系） */
+.action-btn.delete {
+  color: #ef4444;
+}
+.action-btn.delete:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #b91c1c;
+}
+
+/* アイコン自体のサイズ調整 */
+.material-symbols-outlined {
+  font-size: 20px;
 }
 
 input,
@@ -377,7 +405,7 @@ button:hover {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  /* カード間の余白 */
+
 }
 
 .log-card {
@@ -574,5 +602,149 @@ button:hover {
   border-color: #0f766e;
   color: #0f766e;
   transform: translateY(-2px);
+}
+
+@media (min-width: 768px) {
+  .search-card {
+    display: grid;
+    grid-template-columns: 3fr 1fr 1fr 1fr;
+    gap: 16px;
+    align-items: stretch;
+    top: 95px;
+  }
+
+  .tag-summary {
+    font-size: clamp(1px, 1.4vw, 15px);
+  }
+
+}
+
+@media (max-width: 500px) {
+  .greeting {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .header-card {
+    padding: 0px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: white;
+  }
+
+  .user-name {
+    font-size: 13px;
+    font-weight: bold;
+  }
+
+  .tag-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    /* 検索カードのすぐ下に配置 */
+
+    width: 90%;
+    /* 画面幅の90%くらいにする */
+
+    /* 中身の調整 */
+    max-height: 40vh;
+    overflow-y: auto;
+    padding: 14px;
+    /* 気持ち少し広げると「いい感じ」です */
+    gap: 8px 6px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    /* 影を少し強めて浮かせる */
+    background: white;
+    z-index: 9999;
+
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .filter-tag {
+    padding: 6px 12px;
+    /* タグ自体も少し小さめに */
+    font-size: 12px;
+    /* 文字サイズを固定して可読性確保 */
+  }
+
+  .tag-panel-header {
+    margin-bottom: 2px;
+    /* ヘッダーの余白を詰める */
+  }
+
+  .search-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    align-items: stretch;
+    top: 110px;
+    padding: 12px 14px;
+  }
+
+  /* タイトル検索は1行全部使う */
+  .search-card input:first-child {
+    grid-column: 1 / -1;
+  }
+
+  /* タグ選択も1行全部 */
+  .tag-wrapper {
+    grid-column: 1 / -1;
+  }
+
+  /* From To を横並び */
+  .date-field {
+    width: 100%;
+  }
+
+  input,
+  .tag-summary {
+    height: 34px;
+    padding: 6px 10px;
+    font-size: 13px;
+    box-sizing: border-box;
+  }
+
+  /* tag-summaryの縦中央 */
+  .tag-summary {
+    display: flex;
+    align-items: center;
+  }
+
+  /* date inputも同じ高さ */
+  .date-field input {
+    height: 34px;
+  }
+
+  /* ラベル位置微調整 */
+  .date-field label {
+    font-size: 10px;
+    top: -7px;
+  }
+
+  input,
+  .tag-summary {
+    height: 34px;
+    padding: 6px 10px;
+    font-size: 13px;
+    box-sizing: border-box;
+  }
+
+  /* tag-summaryの縦中央 */
+  .tag-summary {
+    display: flex;
+    align-items: center;
+  }
+
+  /* date inputも同じ高さ */
+  .date-field input {
+    height: 34px;
+  }
+
+  .log-card {
+    padding: 10px 15px;
+  }
 }
 </style>

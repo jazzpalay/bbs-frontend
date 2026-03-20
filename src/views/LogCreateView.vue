@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import CommonLayout from '@/views/layouts/CommonLayout.vue'
-import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { getTags, type Tag } from '@/api/tag'
 
 import MarkdownEditor from "@/components/markdown/MarkdownEditor.vue"
@@ -14,92 +14,183 @@ const tagWrapper = ref<HTMLElement | null>(null)
 
 const editorRef = ref<HTMLElement | null>(null)
 const previewRef = ref<HTMLElement | null>(null)
+let isSyncing = false
+
+const activeTab = ref<'editor' | 'preview'>('editor')
+const toggleTab = (tab: 'editor' | 'preview') => {
+  activeTab.value = tab
+}
 
 const tags = ref<Tag[]>([])
 const selectedTags = ref<string[]>([])
 const isTagPanelOpen = ref(false)
 const isHelpOpen = ref(false)
-const isTyping = ref(false)
+
+const codeLanguage = ref('javascript') // デフォルト言語
+
+const codeLanguages = [
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'typescript', label: 'TypeScript' },
+  { value: 'python', label: 'Python' },
+  { value: 'java', label: 'Java' },
+  { value: 'cpp', label: 'C++' },
+  { value: 'csharp', label: 'C#' },
+  { value: 'php', label: 'PHP' },
+  { value: 'ruby', label: 'Ruby' },
+  { value: 'go', label: 'Go' },
+  { value: 'rust', label: 'Rust' },
+  { value: 'sql', label: 'SQL' },
+  { value: 'html', label: 'HTML' },
+  { value: 'css', label: 'CSS' },
+  { value: 'bash', label: 'Bash' },
+  { value: 'json', label: 'JSON' },
+  { value: 'yaml', label: 'YAML' },
+  { value: 'xml', label: 'XML' },
+  { value: 'markdown', label: 'Markdown' },
+]
 
 onMounted(async () => {
-    const res = await getTags()
-    tags.value = res.list
-    document.addEventListener('click', handleClickOutside)
+  const res = await getTags()
+  tags.value = res.list
+  document.addEventListener('click', handleClickOutside)
 })
 
 onBeforeUnmount(() => {
-    document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('click', handleClickOutside)
 })
 
 const toggleTagPanel = () => { isTagPanelOpen.value = !isTagPanelOpen.value }
 const toggleTag = (tag: string) => {
-    if (selectedTags.value.includes(tag)) {
-        selectedTags.value = selectedTags.value.filter(t => t !== tag)
-    } else {
-        selectedTags.value.push(tag)
-    }
+  if (selectedTags.value.includes(tag)) {
+    selectedTags.value = selectedTags.value.filter(t => t !== tag)
+  } else {
+    selectedTags.value.push(tag)
+  }
 }
 const handleClickOutside = (event: MouseEvent) => {
-    if (!tagWrapper.value || !tagWrapper.value.contains(event.target as Node)) {
-        isTagPanelOpen.value = false
-    }
+  if (!tagWrapper.value || !tagWrapper.value.contains(event.target as Node)) {
+    isTagPanelOpen.value = false
+  }
 }
 const hexToRgba = (hex: string, alpha: number) => {
-    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16)
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 const getTagStyle = (tag: Tag) => {
-    const isActive = selectedTags.value.includes(tag.tagName)
-    return {
-        backgroundColor: isActive ? tag.tagColor : hexToRgba(tag.tagColor, 0.2),
-        color: isActive ? '#fff' : tag.tagColor,
-        border: `1.5px solid ${tag.tagColor}`,
-    }
+  const isActive = selectedTags.value.includes(tag.tagName)
+  return {
+    backgroundColor: isActive ? tag.tagColor : hexToRgba(tag.tagColor, 0.2),
+    color: isActive ? '#fff' : tag.tagColor,
+    border: `1.5px solid ${tag.tagColor}`,
+  }
 }
 const getSelectedTagStyle = (tagName: string) => {
-    const tag = tags.value.find(t => t.tagName === tagName)
-    return tag ? { backgroundColor: tag.tagColor, color: '#fff' } : {}
+  const tag = tags.value.find(t => t.tagName === tagName)
+  return tag ? { backgroundColor: tag.tagColor, color: '#fff' } : {}
 }
 
-const syncScroll = (source: "editor" | "preview") => {
-
-    const editor = editorRef.value
-    const preview = previewRef.value
-
-    if (!editor || !preview) return
-
-    const from = source === "editor" ? editor : preview
-    const to = source === "editor" ? preview : editor
-
-    const ratio =
-        from.scrollTop /
-        (from.scrollHeight - from.clientHeight)
-
-    to.scrollTop =
-        ratio *
-        (to.scrollHeight - to.clientHeight)
-}
-
-watch(content, async () => {
-
-  if (isTyping.value) return
-
-  await nextTick()
+const syncScroll = (source: "editor" | "preview", scrollTop?: number) => {
+  if (isSyncing) return
+  isSyncing = true
 
   const editor = editorRef.value
   const preview = previewRef.value
 
   if (!editor || !preview) return
 
-  const ratio =
-    editor.scrollTop /
-    (editor.scrollHeight - editor.clientHeight)
+  // textarea からのスクロールイベント
+  if (source === "editor" && scrollTop !== undefined) {
+    preview.scrollTop = scrollTop
+  } else {
+    // プレビューからのスクロールイベント
+    const from = source === "editor" ? editor : preview
+    const to = source === "editor" ? preview : editor
+    to.scrollTop = from.scrollTop
+  }
 
-  preview.scrollTop =
-    ratio *
-    (preview.scrollHeight - preview.clientHeight)
+  isSyncing = false
+}
 
-})
+// textarea の参照を取得する関数
+const getTextarea = (): HTMLTextAreaElement | null => {
+  return editorRef.value?.querySelector('textarea') as HTMLTextAreaElement
+}
+
+const insertMarkdown = (before: string, after: string, placeholder: string) => {
+  const textarea = getTextarea()
+  if (!textarea) return
+
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const selectedText = content.value.substring(start, end)
+  const beforeText = content.value.substring(0, start)
+  const afterText = content.value.substring(end)
+
+  const newText = selectedText || placeholder
+  content.value = beforeText + before + newText + after + afterText
+
+  // フォーカスを戻す
+  nextTick(() => {
+    textarea.focus()
+    const newStart = start + before.length
+    const newEnd = newStart + newText.length
+    textarea.setSelectionRange(newStart, newEnd)
+  })
+}
+
+const insertCodeBlock = () => {
+  const textarea = getTextarea()
+  if (!textarea) return
+
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const selectedText = content.value.substring(start, end)
+  const beforeText = content.value.substring(0, start)
+  const afterText = content.value.substring(end)
+
+  const codeText = selectedText || 'code'
+  const newContent = `${beforeText}\`\`\`${codeLanguage.value}\n${codeText}\n\`\`\`${afterText}`
+  content.value = newContent
+
+  nextTick(() => {
+    textarea.focus()
+  })
+}
+
+const insertList = (type: 'ul' | 'ol') => {
+  const textarea = getTextarea()
+  if (!textarea) return
+
+  const start = textarea.selectionStart
+  const beforeText = content.value.substring(0, start)
+  const afterText = content.value.substring(start)
+
+  const prefix = type === 'ul' ? '- Item 1\n- Item 2\n- Item 3' : '1. Item 1\n2. Item 2\n3. Item 3'
+  content.value = beforeText + prefix + '\n' + afterText
+
+  nextTick(() => {
+    textarea.focus()
+  })
+}
+
+const insertLink = () => {
+  const textarea = getTextarea()
+  if (!textarea) return
+
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const selectedText = content.value.substring(start, end)
+  const beforeText = content.value.substring(0, start)
+  const afterText = content.value.substring(end)
+
+  const linkText = selectedText || 'Link text'
+  const newContent = `${beforeText}[${linkText}](https://example.com)${afterText}`
+  content.value = newContent
+
+  nextTick(() => {
+    textarea.focus()
+  })
+}
 
 const clearTags = () => { selectedTags.value = [] }
 const openHelp = () => { isHelpOpen.value = true }
@@ -108,89 +199,147 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
 </script>
 
 <template>
-    <CommonLayout>
-        <div class="log-create-container">
+  <CommonLayout>
+    <div class="log-create-container">
 
-            <div class="card form-card">
-                <div class="form-row title-row">
-                    <label>タイトル</label>
-                    <input v-model="title" placeholder="タイトルを入力..." />
-                </div>
-
-                <div class="form-row date-row">
-                    <label>作業日</label>
-                    <input type="date" v-model="date" />
-                </div>
-
-                <div class="form-row tag-row">
-                    <label>タグ</label>
-                    <div class="tag-input-wrapper">
-                        <div class="tag-display">
-                            <span v-if="selectedTags.length === 0" class="tag-placeholder">未選択</span>
-                            <span v-for="tagName in selectedTags" :key="tagName" class="tag-chip"
-                                :style="getSelectedTagStyle(tagName)">
-                                {{ tagName }}
-                            </span>
-                        </div>
-                        <div ref="tagWrapper" class="tag-select-container">
-                            <button class="tag-select-btn" @click="toggleTagPanel">タグ選択</button>
-                            <div v-if="isTagPanelOpen" class="tag-panel">
-                                <div class="tag-panel-header">
-                                    <button v-if="selectedTags.length > 0" class="clear-btn"
-                                        @click="clearTags">全解除</button>
-                                </div>
-                                <div class="tag-list">
-                                    <span v-for="tag in tags" :key="tag.tagId" class="filter-tag"
-                                        :style="getTagStyle(tag)" @click.stop="toggleTag(tag.tagName)">
-                                        {{ tag.tagName }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card editor-card">
-                <div class="editor-header">
-                    <div class="editor-title">
-                        <h3>Markdown Editor</h3>
-                        <span class="sync-badge">Auto Sync On</span>
-                    </div>
-                    <button class="help-btn" @click="openHelp">Markdown Help</button>
-                </div>
-
-                <div class="editor-area">
-                    <div class="pane editor-pane" ref="editorRef" @scroll="syncScroll('editor')">
-                        <MarkdownEditor v-model="content" class="full-editor" @typing="isTyping = true" />
-                    </div>
-                    <div class="pane preview-pane" ref="previewRef" @scroll="syncScroll('preview')">
-                        <div class="preview-label">Live Preview</div>
-                        <MarkdownPreview :content="content" class="full-preview" />
-                    </div>
-                </div>
-
-                <div class="action-row">
-                    <div class="top-nav">
-                        <router-link to="/dashboard" class="back-link">
-                            <span class="icon">←</span> ダッシュボードに戻る
-                        </router-link>
-                    </div>
-                    <button class="submit-btn" @click="saveLog">ログを保存する</button>
-                </div>
-            </div>
+      <div class="card form-card">
+        <div class="form-row title-row">
+          <label>タイトル</label>
+          <input v-model="title" placeholder="タイトルを入力..." />
         </div>
 
-        <div v-if="isHelpOpen" class="modal-overlay" @click="closeHelp">
-            <div class="modal" @click.stop>
-                <div class="modal-header">
-                    <h3>Markdown Guide</h3>
-                    <button class="close-btn" @click="closeHelp">✕</button>
-                </div>
-                <MarkdownHelp />
-            </div>
+        <div class="form-row date-row">
+          <label>作業日</label>
+          <input type="date" v-model="date" />
         </div>
-    </CommonLayout>
+
+        <div class="form-row tag-row">
+          <label>タグ</label>
+          <div class="tag-input-wrapper">
+            <div class="tag-display">
+              <span v-if="selectedTags.length === 0" class="tag-placeholder">未選択</span>
+              <span v-for="tagName in selectedTags" :key="tagName" class="tag-chip"
+                :style="getSelectedTagStyle(tagName)">
+                {{ tagName }}
+              </span>
+            </div>
+            <div ref="tagWrapper" class="tag-select-container">
+              <button class="tag-select-btn" @click="toggleTagPanel">タグ選択</button>
+              <div v-if="isTagPanelOpen" class="tag-panel">
+                <div class="tag-panel-header">
+                  <button v-if="selectedTags.length > 0" class="clear-btn" @click="clearTags">全解除</button>
+                </div>
+                <div class="tag-list">
+                  <span v-for="tag in tags" :key="tag.tagId" class="filter-tag" :style="getTagStyle(tag)"
+                    @click.stop="toggleTag(tag.tagName)">
+                    {{ tag.tagName }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- エディタ部分にタブを追加 -->
+      <div class="card editor-card">
+        <div class="editor-header">
+          <div class="editor-title">
+            <h3>Markdown Editor</h3>
+            <span class="sync-badge">Auto Sync On</span>
+          </div>
+          <button class="help-btn" @click="openHelp">Markdown Help</button>
+        </div>
+
+        <!-- スマホ用タブ -->
+        <div class="editor-tabs">
+          <button :class="['tab-btn', { active: activeTab === 'editor' }]" @click="toggleTab('editor')">
+            Editor
+          </button>
+          <button :class="['tab-btn', { active: activeTab === 'preview' }]" @click="toggleTab('preview')">
+            Preview
+          </button>
+        </div>
+
+        <!-- エディタとプレビューの表示を条件付けに -->
+        <div class="editor-area">
+          <div :class="['pane', 'editor-pane', { hidden: activeTab === 'preview' }]" ref="editorRef">
+            <MarkdownEditor v-model="content" @scroll="(scrollTop) => syncScroll('editor', scrollTop)" />
+            <div class="editor-toolbar">
+              <button class="toolbar-btn" @click="insertMarkdown('**', '**', 'Bold')" title="Bold">
+                <span class="icon">B</span>
+              </button>
+              <button class="toolbar-btn" @click="insertMarkdown('*', '*', 'Italic')" title="Italic">
+                <span class="icon">I</span>
+              </button>
+              <button class="toolbar-btn" @click="insertMarkdown('~~', '~~', 'Strikethrough')" title="Strikethrough">
+                <span class="icon">S</span>
+              </button>
+              <div class="toolbar-divider"></div>
+              <button class="toolbar-btn" @click="insertMarkdown('`', '`', 'Code')" title="Inline Code">
+                <span class="icon">&lt;&gt;</span>
+              </button>
+
+              <!-- コードブロック部分を修正 -->
+              <div class="code-block-wrapper">
+                <select v-model="codeLanguage" class="code-language-select">
+                  <option v-for="lang in codeLanguages" :key="lang.value" :value="lang.value">
+                    {{ lang.label }}
+                  </option>
+                </select>
+                <button class="toolbar-btn" @click="insertCodeBlock()" title="Code Block">
+                  <span class="icon">{ }</span>
+                </button>
+              </div>
+
+              <div class="toolbar-divider"></div>
+              <button class="toolbar-btn" @click="insertMarkdown('# ', '\n', 'Heading 1')" title="Heading 1">
+                <span class="icon">H1</span>
+              </button>
+              <button class="toolbar-btn" @click="insertMarkdown('## ', '\n', 'Heading 2')" title="Heading 2">
+                <span class="icon">H2</span>
+              </button>
+              <button class="toolbar-btn" @click="insertMarkdown('> ', '\n', 'Quote')" title="Quote">
+                <span class="icon">&gt;</span>
+              </button>
+              <div class="toolbar-divider"></div>
+              <button class="toolbar-btn" @click="insertList('ul')" title="Unordered List">
+                <span class="icon">•</span>
+              </button>
+              <button class="toolbar-btn" @click="insertList('ol')" title="Ordered List">
+                <span class="icon">1</span>
+              </button>
+              <button class="toolbar-btn" @click="insertLink()" title="Link">
+                <span class="icon">🔗</span>
+              </button>
+            </div>
+          </div>
+          <div :class="['pane', 'preview-pane', { hidden: activeTab === 'editor' }]" ref="previewRef"
+            @scroll="syncScroll('preview')">
+            <MarkdownPreview :content="content" />
+          </div>
+        </div>
+
+        <div class="action-row">
+          <div class="top-nav">
+            <router-link to="/dashboard" class="back-link">
+              <span class="icon">←</span> ダッシュボードに戻る
+            </router-link>
+          </div>
+          <button class="submit-btn" @click="saveLog">保存</button>
+        </div>
+      </div>
+    </div>
+    <div v-if="isHelpOpen" class="modal-overlay" @click="closeHelp">
+      <div class="modal" @click.stop>
+        <div class="modal-header">
+          <h3>Markdown Guide</h3>
+          <button class="close-btn" @click="closeHelp">✕</button>
+        </div>
+        <MarkdownHelp />
+      </div>
+    </div>
+  </CommonLayout>
 </template>
 
 <style scoped>
@@ -207,14 +356,14 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
 }
 
 .top-nav {
-  padding: 0 10px;
+  padding: 0;
 }
 
 .back-link {
   text-decoration: none;
   color: #64748b;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 12px;
   transition: color 0.2s;
 }
 
@@ -237,18 +386,19 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
   align-items: center;
   gap: 12px;
   position: relative;
+  flex: 0 1 auto;
 }
 
 .title-row {
-  flex: 0 0 350px;
+  flex: 2;
 }
 
 .date-row {
-  flex: 0 0 auto;
+  flex: 0 0 160px;
 }
 
 .tag-row {
-  flex: 1;
+  flex: 3;
 }
 
 .form-row input {
@@ -261,7 +411,7 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .tag-display {
@@ -286,6 +436,7 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
 
 .tag-select-container {
   position: relative;
+  flex-shrink: 0;
 }
 
 .tag-panel {
@@ -296,8 +447,9 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
   background: white;
   z-index: 100;
   border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   padding: 16px;
+  box-sizing: border-box;
 }
 
 .tag-list {
@@ -337,14 +489,13 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
 
 .editor-card {
   flex: 1;
+  /* PC ではこれで縦いっぱいに伸びる */
   display: flex;
   flex-direction: column;
   overflow: hidden;
-
   background: white;
   border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
-
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
   padding: 0 30px;
 }
 
@@ -363,47 +514,130 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
   gap: 10px;
 }
 
+.editor-title h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
 .sync-badge {
-  font-size: 10px;
+  font-size: 9px;
   color: #14b8a6;
   background: #ccfbf1;
-  padding: 2px 8px;
+  padding: 2px 6px;
   border-radius: 4px;
   font-weight: bold;
+  white-space: nowrap;
 }
 
 /* ===== Editor Area ===== */
-
 .editor-area {
   flex: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
+  gap: 0;
   overflow: hidden;
-
+  min-height: 0;
 }
 
 .pane {
   height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .editor-pane {
   background: #fafafa;
   border-right: 1px solid #e5e7eb;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px;
+  background: #f5f5f5;
+  border-top: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  color: #475569;
+  transition: all 0.2s;
+}
+
+.toolbar-btn:hover {
+  background: #14b8a6;
+  color: white;
+  border-color: #14b8a6;
+}
+
+.toolbar-btn:active {
+  transform: scale(0.95);
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: #d1d5db;
+  margin: 0 4px;
+}
+
+.code-block-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.code-language-select {
+  padding: 4px 6px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.code-language-select:hover {
+  border-color: #14b8a6;
+}
+
+.code-language-select:focus {
+  outline: none;
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.1);
 }
 
 .preview-pane {
   padding: 28px;
-  padding-bottom: 80px;
+  box-sizing: border-box;
   background: white;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .editor-pane textarea {
+  flex: 1;
   width: 100%;
-  min-height: 100%;
-  padding: 20px;
+  padding: 16px;
 
   border: none;
   outline: none;
@@ -413,7 +647,7 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
   line-height: 1.7;
   background: transparent;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .preview-label {
@@ -429,23 +663,41 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
 /* ===== Action Row ===== */
 
 .action-row {
-  padding: 12px 24px;
+  padding: 8px 20px;
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
 
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
 }
 
 .submit-btn {
   background: #14b8a6;
   color: white;
-  padding: 10px 30px;
-  border-radius: 8px;
+  padding: 8px 20px;
+  border-radius: 6px;
   font-weight: bold;
+  font-size: 14px;
   border: none;
   cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.submit-btn:hover {
+  background: #F1F5F9;
+  transform: translateY(-2px);
+}
+
+.submit-btn:hover {
+  background: #0d9488;       /* 元の #14b8a6 より少しだけ濃い色 */
+  transform: translateY(-2px); /* 少し浮く */
+}
+
+.submit-btn:active {
+  transform: translateY(0);    /* クリックした瞬間に沈む */
 }
 
 /* ===== Common ===== */
@@ -475,8 +727,7 @@ input {
   font-size: 13px;
 }
 
-.tag-select-btn,
-.help-btn {
+.tag-select-btn {
   border: 1.5px solid #14b8a6;
   background: transparent;
   color: #14b8a6;
@@ -484,6 +735,19 @@ input {
   border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
+  white-space: nowrap;
+}
+
+.help-btn {
+  border: 1.5px solid #14b8a6;
+  background: transparent;
+  color: #14b8a6;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 /* ===== Modal ===== */
@@ -491,7 +755,7 @@ input {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
 
   display: flex;
   justify-content: center;
@@ -529,5 +793,437 @@ input {
 .full-editor,
 .full-preview {
   min-height: 100%;
+}
+
+/* タブの追加スタイル */
+.editor-tabs {
+  display: none;
+  /* PC では非表示 */
+}
+
+@media (max-width: 768px) {
+
+  .log-create-container {
+    height: auto;
+    overflow: visible;
+  }
+
+  .card {
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .editor-card {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+    padding: 0 16px;
+    height: calc(100vh - 50px);
+    /* フォーム部分を差し引く */
+    min-height: 0;
+
+  }
+
+  .editor-header {
+    padding: 8px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .editor-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #e2e8f0;
+    background: #fff;
+    flex-shrink: 0;
+  }
+
+  .editor-area {
+    flex: 1;
+    display: block;
+    overflow: hidden;
+    min-height: 0;
+    height: 100%;
+  }
+
+  .pane {
+    height: 100%;
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+  }
+
+  .pane:not(.hidden) {
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  .editor-pane {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .editor-pane textarea {
+    flex: 1;
+    width: 100%;
+    padding: 16px;
+    border: none;
+    outline: none;
+    resize: none;
+    font-size: 15px;
+    line-height: 1.7;
+    background: transparent;
+    box-sizing: border-box;
+    min-height: 0;
+  }
+
+  .editor-toolbar {
+    flex-shrink: 0;
+    padding: 4px;
+  }
+
+  .action-row {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    gap: 8px;
+  }
+
+  /* スマホでのみ表示 */
+  .editor-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #e2e8f0;
+    background: #fff;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 12px 16px;
+    background: #f5f5f5;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-weight: bold;
+    color: #64748b;
+    transition: all 0.2s;
+  }
+
+  .tab-btn.active {
+    background: white;
+    border-bottom-color: #14b8a6;
+    color: #14b8a6;
+  }
+
+  /* フォーム部分を縦並びに */
+  .form-card {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+    padding: 16px;
+    border-radius: 0;
+    border-bottom: 2px solid #f1f5f9;
+    flex-shrink: 0;
+  }
+
+  .form-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: none;
+    width: 100%;
+  }
+
+  .title-row,
+  .date-row,
+  .tag-row {
+    flex: none;
+    width: 100%;
+  }
+
+  label {
+    white-space: nowrap;
+    flex-shrink: 0;
+    /* label の幅を固定 */
+    width: auto;
+    min-width: 60px;
+  }
+
+  .form-row input {
+    flex: 1;
+    /* input が余り領域を埋める */
+    width: auto;
+  }
+
+  /* タグ部分の横並び調整 */
+  .tag-input-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    flex-direction: column;
+  }
+
+  .tag-display {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 10px;
+    min-height: auto;
+    background: #fff;
+    align-items: center;
+    box-sizing: border-box;
+  }
+
+  .tag-chip {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: bold;
+  }
+
+  .tag-placeholder {
+    color: #94a3b8;
+    font-size: 12px;
+  }
+
+  .tag-select-container {
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* エディタ部分 */
+  .editor-area {
+    flex: 1;
+    display: block;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .pane {
+    height: 100%;
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+  }
+
+  .pane:not(.hidden) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .editor-pane {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #fafafa;
+  }
+
+  .preview-pane {
+    width: 100%;
+  }
+
+  .tag-panel {
+    position: absolute;
+    /* ボタン高さ（36px） + gap（8px）分 */
+    top: 100%;
+    right: 0;
+    width: 100%;
+    background: white;
+    z-index: 9999;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 12px;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+
+  .tag-panel-header {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+  }
+
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-start;
+  }
+
+  .filter-tag {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1.5px solid;
+  }
+
+  .filter-tag:hover {
+    opacity: 0.8;
+  }
+
+  .tag-select-btn {
+    width: 100%;
+    border: 1.5px solid #14b8a6;
+    background: transparent;
+    color: #14b8a6;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    box-sizing: border-box;
+  }
+
+  .clear-btn {
+    font-size: 11px;
+    background: none;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+
+  .clear-btn:hover {
+    color: #0f172a;
+  }
+
+  .editor-header {
+    padding: 8px 16px;
+    gap: 8px;
+  }
+
+  .editor-title h3 {
+    margin: 0;
+    font-size: 14px;
+  }
+
+  .sync-badge {
+    font-size: 8px;
+    padding: 1px 4px;
+  }
+
+  .help-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .editor-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #e2e8f0;
+    background: #fff;
+  }
+
+  .tab-btn {
+    flex: 1;
+    padding: 10px 12px;
+    background: #f5f5f5;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 13px;
+    color: #64748b;
+    transition: all 0.2s;
+  }
+
+  .tab-btn.active {
+    background: white;
+    border-bottom-color: #14b8a6;
+    color: #14b8a6;
+  }
+
+  .editor-area {
+    flex: 1;
+    display: block;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .pane {
+    height: 100%;
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+  }
+
+  .pane:not(.hidden) {
+    display: flex;
+  }
+
+  .editor-pane,
+  .preview-pane {
+    width: 100%;
+  }
+
+  .editor-toolbar {
+    padding: 4px;
+    gap: 1px;
+  }
+
+  .toolbar-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 9px;
+  }
+
+  .code-language-select {
+    padding: 3px 5px;
+    font-size: 10px;
+  }
+
+  .toolbar-divider {
+    height: 16px;
+    margin: 0 1px;
+  }
+
+  .action-row {
+    padding: 6px 12px;
+    gap: 8px;
+  }
+
+  .back-link {
+    font-size: 11px;
+  }
+
+  .submit-btn {
+    padding: 6px 16px;
+    font-size: 13px;
+  }
+
+}
+
+/* タブレット用 */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .form-card {
+    flex-wrap: wrap;
+  }
+
+  .title-row {
+    flex: 1 1 100%;
+  }
+
+  .date-row,
+  .tag-row {
+    flex: 1 1 1;
+  }
 }
 </style>

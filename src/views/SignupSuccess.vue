@@ -22,6 +22,11 @@ import CommonLayout from '@/views/layouts/CommonLayout.vue'
 </template>
 
 <style scoped>
+:deep(.right) {
+  display: flex;
+  justify-content: center;
+  align-items: center !important;
+}
 .auth-container {
   width: min(90%, 420px);
   display: flex;

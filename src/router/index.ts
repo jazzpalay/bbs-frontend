@@ -6,8 +6,11 @@ const routes = [
   { path: '/signin', component: () => import('@/views/SignIn.vue') },
   { path: '/signup', component: () => import('@/views/SignUp.vue') },
   { path: '/signup/success', component: () => import('@/views/SignupSuccess.vue') },
-  { path: '/signup/success', component: () => import('@/views/SignupSuccess.vue') },
   { path: '/dashboard', component: () => import('@/views/DashboardView.vue'), meta: { requiresAuth: true } },
+  { path: '/TagManagement', component: () => import('@/views/TagManageView.vue'), meta: { requiresAuth: true } },
+  { path: '/LogCreation', component: () => import('@/views/LogCreateView.vue'), meta: { requiresAuth: true } },
+  { path: '/LogEdit/:logId', name: 'LogEdit', component: () => import('@/views/LogCreateView.vue'), meta: { requiresAuth: true } },
+  { path: '/LogDetail/:logId', name: 'LogDetail', component: () => import('@/views/LogDetailView.vue'), meta: { requiresAuth: true } }
 ]
 
 export const router = createRouter({
@@ -17,11 +20,11 @@ export const router = createRouter({
 
 router.beforeEach(async (to, _, next) => {
   const authStore = useAuthStore()
+  const isAuthenticated = !!authStore.accessToken
 
   if (to.meta.requiresAuth) {
-    if (authStore.accessToken) {
-      next()
-      return
+    if (isAuthenticated) {
+      return next()
     }
 
     try {
@@ -29,12 +32,17 @@ router.beforeEach(async (to, _, next) => {
       console.log('newToken:', newToken)
       authStore.setToken(newToken)
       console.log('store after set:', authStore.accessToken)
-      next()
+      return next()
     } catch {
-      next('/signin')
+      return next('/signin')
     }
-  } else {
-    next()
   }
+
+  if (to.path === '/signin' && isAuthenticated) {
+    return next('/dashboard')
+  }
+    
+  return next()
+  
 })
 

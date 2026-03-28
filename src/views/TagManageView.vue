@@ -61,7 +61,7 @@ const openUpdate = (tag: Tag) => {
 }
 const update = async () => {
     if (!updateTargetTag.value) return
-        const tag: Tag = {
+    const tag: Tag = {
         tagId: updateTargetTag.value.tagId,
         tagName: updateTagName.value,
         tagColor: updateTagColor.value
@@ -396,6 +396,8 @@ select:focus {
 
 .color-wrapper {
     position: relative;
+    display: flex;
+    align-items: center;
 }
 
 /* 実際に見えるボタン */
@@ -421,41 +423,14 @@ select:focus {
     cursor: pointer;
 }
 
-@media (max-width: 600px) {
-    .primary-btn {
-        padding: 8px 14px;
-        font-size: 13px;
-        border-radius: 10px;
-    }
 
-    .create-row {
-        gap: 8px;
-    }
-
-    .tag-input {
-        font-size: 14px;
-        padding: 10px;
-    }
-
-    .color-button {
-        padding: 8px 12px;
-        font-size: 13px;
-        border-radius: 10px;
-    }
-
-    .outline-btn {
-        padding: 5px 10px;
-        font-size: 12px;
-        border-radius: 8px;
-    }
-
-    .tag-card {
-        padding: 14px 16px;
-    }
-}
 
 .input-error::placeholder {
     color: #ef4444;
+}
+
+.input-error {
+  border: 1px solid #e53935;
 }
 
 .modal-overlay {
@@ -490,13 +465,65 @@ select:focus {
 }
 
 .back-link {
-    color: var(--theme-color);
     text-decoration: none;
-    font-weight: 500;
-    transition: 0.2s;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 14px;
+    transition: color 0.2s;
 }
 
 .back-link:hover {
     opacity: 0.7;
+}
+
+@media (max-width: 600px) {
+    .primary-btn {
+        padding: 8px 14px;
+        font-size: 13px;
+        border-radius: 10px;
+    }
+
+    .create-row {
+        gap: 8px;
+    }
+
+    .tag-input {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    .color-button {
+        padding: 8px 12px;
+        font-size: 13px;
+        border-radius: 10px;
+    }
+
+    .outline-btn {
+        padding: 5px 10px;
+        font-size: 12px;
+        border-radius: 8px;
+    }
+
+    .tag-card {
+        padding: 14px 16px;
+    }
+
+
+    .create-row {
+        gap: 8px;
+        /* 折り返しを許可するか、少しだけ左右にマージンを持たせると安全です */
+        justify-content: space-between;
+    }
+
+    .color-button {
+        /* スマホでは文字を短くするか、最小幅を確保 */
+        min-width: 70px;
+        text-align: center;
+    }
+
+    .modal .create-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
 }
 </style>

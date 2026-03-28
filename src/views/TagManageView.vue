@@ -429,6 +429,10 @@ select:focus {
     color: #ef4444;
 }
 
+.input-error {
+  border: 1px solid #e53935;
+}
+
 .modal-overlay {
     position: fixed;
     inset: 0;

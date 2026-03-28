@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 
 const content = defineModel<string>()
-const textareaRef = ref<HTMLTextAreaElement | null>(null)
+
+const props = defineProps<{
+  error?: boolean
+}>()  
 
 const emit = defineEmits<{
   'scroll': [scrollTop: number]
@@ -19,6 +21,7 @@ const handleScroll = (e: Event) => {
     ref="textareaRef"
     v-model="content" 
     class="editor"
+    :class="{ 'error': props.error }"
     @scroll="handleScroll"
     placeholder="Markdownを書いてください" 
   />
@@ -36,5 +39,9 @@ const handleScroll = (e: Event) => {
   box-sizing: border-box;
   overflow: auto;
   display: block;
+}
+
+.editor.error::placeholder {
+  color: #e53935; /* ← 赤 */
 }
 </style>

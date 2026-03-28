@@ -9,6 +9,8 @@ const routes = [
   { path: '/dashboard', component: () => import('@/views/DashboardView.vue'), meta: { requiresAuth: true } },
   { path: '/TagManagement', component: () => import('@/views/TagManageView.vue'), meta: { requiresAuth: true } },
   { path: '/LogCreation', component: () => import('@/views/LogCreateView.vue'), meta: { requiresAuth: true } },
+  { path: '/LogEdit/:logId', name: 'LogEdit', component: () => import('@/views/LogCreateView.vue'), meta: { requiresAuth: true } },
+  { path: '/LogDetail/:logId', name: 'LogDetail', component: () => import('@/views/LogDetailView.vue'), meta: { requiresAuth: true } }
 ]
 
 export const router = createRouter({

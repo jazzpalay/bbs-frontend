@@ -2,18 +2,30 @@
 import CommonLayout from '@/views/layouts/CommonLayout.vue'
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { getTags, type Tag } from '@/api/tag'
+import { createLog, getLogDetail, updateLog } from '@/api/log'
+import { useRouter, useRoute } from 'vue-router'
+import { AxiosError } from 'axios'
 
 import MarkdownEditor from "@/components/markdown/MarkdownEditor.vue"
 import MarkdownPreview from "@/components/markdown/MarkdownPreview.vue"
 import MarkdownHelp from "@/components/markdown/MarkdownHelp.vue"
 
+const router = useRouter()
+const route = useRoute()
+const logId = route.params.logId as string | undefined
+const isEdit = !!logId
 const title = ref('')
-const date = ref(new Date().toISOString().split('T')[0])
+const logDate = ref<string>(new Date().toISOString().split('T')[0]!)
 const content = ref('')
 const tagWrapper = ref<HTMLElement | null>(null)
 
 const editorRef = ref<HTMLElement | null>(null)
 const previewRef = ref<HTMLElement | null>(null)
+const successMessage = ref('')
+const createError = ref('')
+const titleError = ref(false)
+const contentError = ref(false)
+const dateError = ref(false)
 let isSyncing = false
 
 const activeTab = ref<'editor' | 'preview'>('editor')
@@ -22,7 +34,7 @@ const toggleTab = (tab: 'editor' | 'preview') => {
 }
 
 const tags = ref<Tag[]>([])
-const selectedTags = ref<string[]>([])
+const selectedTags = ref<Tag[]>([])
 const isTagPanelOpen = ref(false)
 const isHelpOpen = ref(false)
 
@@ -52,6 +64,18 @@ const codeLanguages = [
 onMounted(async () => {
   const res = await getTags()
   tags.value = res.list
+
+  if (isEdit) {
+    const log = await getLogDetail(logId!)
+
+    title.value = log.title
+    content.value = log.content
+    logDate.value = log.logDate
+
+    selectedTags.value = tags.value.filter(tag =>
+      log.tags.some(t => t.tagId === tag.tagId)
+    )
+  }
   document.addEventListener('click', handleClickOutside)
 })
 
@@ -60,9 +84,11 @@ onBeforeUnmount(() => {
 })
 
 const toggleTagPanel = () => { isTagPanelOpen.value = !isTagPanelOpen.value }
-const toggleTag = (tag: string) => {
-  if (selectedTags.value.includes(tag)) {
-    selectedTags.value = selectedTags.value.filter(t => t !== tag)
+const toggleTag = (tag: Tag) => {
+  const exists = selectedTags.value.some(t => t.tagId === tag.tagId)
+
+  if (exists) {
+    selectedTags.value = selectedTags.value.filter(t => t.tagId !== tag.tagId)
   } else {
     selectedTags.value.push(tag)
   }
@@ -77,16 +103,16 @@ const hexToRgba = (hex: string, alpha: number) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 const getTagStyle = (tag: Tag) => {
-  const isActive = selectedTags.value.includes(tag.tagName)
+  const isActive = selectedTags.value.some(t => t.tagId === tag.tagId)
   return {
     backgroundColor: isActive ? tag.tagColor : hexToRgba(tag.tagColor, 0.2),
     color: isActive ? '#fff' : tag.tagColor,
     border: `1.5px solid ${tag.tagColor}`,
   }
 }
-const getSelectedTagStyle = (tagName: string) => {
-  const tag = tags.value.find(t => t.tagName === tagName)
-  return tag ? { backgroundColor: tag.tagColor, color: '#fff' } : {}
+const getSelectedTagStyle = (tag: Tag) => {
+  const selectedTag = tags.value.find(t => t.tagName === tag.tagName)
+  return selectedTag ? { backgroundColor: selectedTag.tagColor, color: '#fff' } : {}
 }
 
 const syncScroll = (source: "editor" | "preview", scrollTop?: number) => {
@@ -195,7 +221,56 @@ const insertLink = () => {
 const clearTags = () => { selectedTags.value = [] }
 const openHelp = () => { isHelpOpen.value = true }
 const closeHelp = () => { isHelpOpen.value = false }
-const saveLog = () => { console.log('Saving...', { title: title.value, content: content.value }) }
+
+const handleSubmit = async () => {
+  if (!title.value.trim()) {
+    titleError.value = true
+    return
+  }
+  if (!content.value.trim()) {
+    contentError.value = true
+    return
+  }
+  if (!logDate.value) {
+    dateError.value = true
+    return
+  }
+
+  try {
+    successMessage.value = ''
+    createError.value = ''
+    if (isEdit) {
+      // 更新処理
+      await updateLog(
+        logId,
+        title.value,
+        content.value,
+        logDate.value,
+        selectedTags.value.map(tag => tag.tagId)
+      );
+      console.log('ログの更新に成功しました。');
+      successMessage.value = 'ログを更新しました'
+    } else {
+      // 新規作成処理
+      const newLog = await createLog(
+        title.value,
+        content.value,
+        logDate.value,
+        selectedTags.value.map(tag => tag.tagId)
+      );
+      console.log('ログの作成に成功しました。:', newLog);
+      successMessage.value = 'ログを保存しました'
+    }
+  } catch (error) {
+    console.error('ログの作成に失敗しました。:', error);
+    const err = error as AxiosError<{ message: string }>
+    createError.value = err?.response?.data?.message || '作成に失敗しました'
+  }
+}
+const handleSuccess = () => {
+  successMessage.value = ''
+  router.push('/dashboard')
+}
 </script>
 
 <template>
@@ -205,22 +280,26 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
       <div class="card form-card">
         <div class="form-row title-row">
           <label>タイトル</label>
-          <input v-model="title" placeholder="タイトルを入力..." />
+          <input v-model="title" :placeholder="titleError ? 'タイトルを入力してください' : 'タイトルを入力...'"
+            :class="{ 'input-error': titleError }" @input="titleError = false" />
         </div>
 
         <div class="form-row date-row">
           <label>作業日</label>
-          <input type="date" v-model="date" />
+          <input type="date" v-model="logDate" :class="{ 'date-error': dateError }" @input="dateError = false" />
         </div>
+        <p v-if="dateError" class="date-error-message">
+          作業日を入力してください
+        </p>
+
 
         <div class="form-row tag-row">
           <label>タグ</label>
           <div class="tag-input-wrapper">
             <div class="tag-display">
               <span v-if="selectedTags.length === 0" class="tag-placeholder">未選択</span>
-              <span v-for="tagName in selectedTags" :key="tagName" class="tag-chip"
-                :style="getSelectedTagStyle(tagName)">
-                {{ tagName }}
+              <span v-for="tag in selectedTags" :key="tag.tagId" class="tag-chip" :style="getSelectedTagStyle(tag)">
+                {{ tag.tagName }}
               </span>
             </div>
             <div ref="tagWrapper" class="tag-select-container">
@@ -231,7 +310,7 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
                 </div>
                 <div class="tag-list">
                   <span v-for="tag in tags" :key="tag.tagId" class="filter-tag" :style="getTagStyle(tag)"
-                    @click.stop="toggleTag(tag.tagName)">
+                    @click.stop="toggleTag(tag)">
                     {{ tag.tagName }}
                   </span>
                 </div>
@@ -264,12 +343,13 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
         <!-- エディタとプレビューの表示を条件付けに -->
         <div class="editor-area">
           <div :class="['pane', 'editor-pane', { hidden: activeTab === 'preview' }]" ref="editorRef">
-            <MarkdownEditor v-model="content" @scroll="(scrollTop) => syncScroll('editor', scrollTop)" />
+            <MarkdownEditor v-model="content" @scroll="(scrollTop) => syncScroll('editor', scrollTop)"
+              :error="contentError" />
             <div class="editor-toolbar">
               <button class="toolbar-btn" @click="insertMarkdown('**', '**', 'Bold')" title="Bold">
                 <span class="icon">B</span>
               </button>
-              <button class="toolbar-btn" @click="insertMarkdown('*', '*', 'Italic')" title="Italic">
+              <button class="toolbar-btn" @click="insertMarkdown('_', '_', 'Italic')" title="Italic">
                 <span class="icon">I</span>
               </button>
               <button class="toolbar-btn" @click="insertMarkdown('~~', '~~', 'Strikethrough')" title="Strikethrough">
@@ -279,8 +359,6 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
               <button class="toolbar-btn" @click="insertMarkdown('`', '`', 'Code')" title="Inline Code">
                 <span class="icon">&lt;&gt;</span>
               </button>
-
-              <!-- コードブロック部分を修正 -->
               <div class="code-block-wrapper">
                 <select v-model="codeLanguage" class="code-language-select">
                   <option v-for="lang in codeLanguages" :key="lang.value" :value="lang.value">
@@ -291,7 +369,6 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
                   <span class="icon">{ }</span>
                 </button>
               </div>
-
               <div class="toolbar-divider"></div>
               <button class="toolbar-btn" @click="insertMarkdown('# ', '\n', 'Heading 1')" title="Heading 1">
                 <span class="icon">H1</span>
@@ -326,7 +403,9 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
               <span class="icon">←</span> ダッシュボードに戻る
             </router-link>
           </div>
-          <button class="submit-btn" @click="saveLog">保存</button>
+          <button class="submit-btn" @click="handleSubmit">
+            {{ isEdit ? '更新' : '保存' }}
+          </button>
         </div>
       </div>
     </div>
@@ -340,6 +419,26 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
       </div>
     </div>
   </CommonLayout>
+  <div v-if="successMessage" class="modal-overlay">
+    <div class="modal">
+      <p>{{ successMessage }}</p>
+      <div class="modal-actions">
+        <button class="outline-btn" @click="handleSuccess">
+          閉じる
+        </button>
+      </div>
+    </div>
+  </div>
+  <div v-if="createError" class="modal-overlay">
+    <div class="modal">
+      <p>{{ createError }}</p>
+      <div class="modal-actions">
+        <button class="outline-btn" @click="createError = ''">
+          閉じる
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -627,7 +726,7 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
 }
 
 .preview-pane {
-  padding: 28px;
+  padding: 16px;
   box-sizing: border-box;
   background: white;
   overflow-y: auto;
@@ -648,6 +747,7 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
   background: transparent;
   box-sizing: border-box;
   overflow: auto;
+
 }
 
 .preview-label {
@@ -692,12 +792,15 @@ const saveLog = () => { console.log('Saving...', { title: title.value, content: 
 }
 
 .submit-btn:hover {
-  background: #0d9488;       /* 元の #14b8a6 より少しだけ濃い色 */
-  transform: translateY(-2px); /* 少し浮く */
+  background: #0d9488;
+  /* 元の #14b8a6 より少しだけ濃い色 */
+  transform: translateY(-2px);
+  /* 少し浮く */
 }
 
 .submit-btn:active {
-  transform: translateY(0);    /* クリックした瞬間に沈む */
+  transform: translateY(0);
+  /* クリックした瞬間に沈む */
 }
 
 /* ===== Common ===== */
@@ -755,23 +858,36 @@ input {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-
+  background: rgba(0, 0, 0, 0.3);
   display: flex;
   justify-content: center;
   align-items: center;
-
-  z-index: 1000;
 }
 
 .modal {
-  background: #fff;
+  background: white;
   padding: 24px;
-  border-radius: 12px;
+  border-radius: 16px;
+  width: 320px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
 
-  width: min(800px, 90%);
-  max-height: 80vh;
-  overflow-y: auto;
+.modal-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.outline-btn {
+  padding: 6px 14px;
+  border-radius: 10px;
+  border: 2px solid #14b8a6;
+  background: white;
+  color: #14b8a6;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
 }
 
 .modal-header {
@@ -800,6 +916,31 @@ input {
   display: none;
   /* PC では非表示 */
 }
+
+.input-error::placeholder {
+  color: #ef4444;
+}
+
+.input-error {
+  border: 1px solid #e53935;
+}
+
+.date-error {
+  border: 1px solid #e53935;
+}
+
+.date-error-message {
+  color: #e53935;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.date-field {
+  display: flex;
+  flex-direction: column;
+}
+
+
 
 @media (max-width: 768px) {
 

@@ -12,13 +12,13 @@ marked.setOptions({
 })
 
 const props = defineProps<{
-    content: string
+  content: string
 }>()
 
 const renderedMarkdown = computed(() => {
-    const rawHtml = marked.parse(props.content) as string
+  const rawHtml = marked.parse(props.content) as string
 
-    return DOMPurify.sanitize(rawHtml)
+  return DOMPurify.sanitize(rawHtml)
 })
 
 watch(renderedMarkdown, async () => {
@@ -59,14 +59,16 @@ watch(renderedMarkdown, async () => {
 </script>
 
 <template>
-    <div ref="previewRef" class="markdown-body" v-html="renderedMarkdown"></div>
+  <div ref="previewRef" class="markdown-body" v-html="renderedMarkdown"></div>
 </template>
 
 <style>
-
 .markdown-body {
   width: 100%;
-  margin-bottom: 40px;  /* 下部に余白を作る */
+  margin-bottom: 40px;
+  /* 下部に余白を作る */
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .markdown-body pre {
@@ -75,12 +77,12 @@ watch(renderedMarkdown, async () => {
   color: #d4d4d4;
   padding: 18px;
   border-radius: 8px;
-  overflow-x: auto;
+
 }
 
 .markdown-body code {
-    font-family: Consolas, Monaco, monospace;
-    font-size: 14px;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 14px;
 }
 
 .markdown-body pre code {
@@ -90,17 +92,17 @@ watch(renderedMarkdown, async () => {
 }
 
 .markdown-body h1 {
-    font-size: 28px;
-    margin-top: 24px;
+  font-size: 28px;
+  margin-top: 24px;
 }
 
 .markdown-body h2 {
-    font-size: 22px;
-    margin-top: 20px;
+  font-size: 22px;
+  margin-top: 20px;
 }
 
 .markdown-body p {
-    line-height: 1.8;
+  line-height: 1.8;
 }
 
 .copy-btn {
@@ -114,7 +116,7 @@ watch(renderedMarkdown, async () => {
   border-radius: 6px;
   border: none;
 
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   color: #cbd5f5;
 
   cursor: pointer;
@@ -130,6 +132,6 @@ watch(renderedMarkdown, async () => {
 
 /* hover時 */
 .copy-btn:hover {
-  background: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.15);
 }
 </style>

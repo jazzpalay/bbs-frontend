@@ -618,10 +618,10 @@ button:hover {
 .date-field label {
   position: absolute;
   top: -8px;
-  /* ← 上に出す */
+
   left: 12px;
   background: white;
-  /* ← 背景で枠線を隠す */
+
   padding: 0 4px;
   font-size: 11px;
   color: #94a3b8;
@@ -813,6 +813,15 @@ button:hover {
   .tag-summary {
     display: flex;
     align-items: center;
+  }
+
+  /* ラベル位置微調整 */
+  .date-field label {
+    position: static;     /* ← absoluteやめる */
+    background: none;     /* ← 背景消す */
+    padding: 0;
+    font-size: 12px;
+    margin-bottom: 4px;   /* ← inputとの間隔 */
   }
 
   input,

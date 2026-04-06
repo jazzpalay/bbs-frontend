@@ -814,7 +814,7 @@ button:hover {
     width: 100%;
   }
 
-  input,
+  input:not([type="date"]),
   .tag-summary {
     height: 34px;
     padding: 6px 10px;
@@ -826,11 +826,6 @@ button:hover {
   .tag-summary {
     display: flex;
     align-items: center;
-  }
-
-  /* date inputも同じ高さ */
-  .date-field input {
-    height: 34px;
   }
 
   /* ラベル位置微調整 */
@@ -860,10 +855,6 @@ button:hover {
     border-radius: 999px;
     font-weight: 500;
     white-space: nowrap;
-  }
-  /* date inputも同じ高さ */
-  .date-field input {
-    height: 34px;
   }
 
   .log-card {

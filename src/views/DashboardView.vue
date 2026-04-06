@@ -815,20 +815,23 @@ button:hover {
     align-items: center;
   }
 
-  /* ラベル位置微調整 */
-  .date-field label {
-    position: static;     /* ← absoluteやめる */
-    background: none;     /* ← 背景消す */
-    padding: 0;
-    font-size: 12px;
-    margin-bottom: 4px;   /* ← inputとの間隔 */
-  }
-
-  input,
+  input:not([type="date"]),
   .tag-summary {
     height: 34px;
     padding: 6px 10px;
     font-size: 13px;
+    box-sizing: border-box;
+  }
+
+  .date-field input[type="date"] {
+    width: 100%;
+    height: 44px;
+    padding: 8px 12px;
+    font-size: 16px;
+    background-color: #fff;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+    border-radius: 16px;
     box-sizing: border-box;
   }
 

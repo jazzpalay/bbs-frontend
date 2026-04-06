@@ -809,29 +809,10 @@ button:hover {
     grid-column: 1 / -1;
   }
 
-  /* From To を横並び */
-  .date-field {
-    width: 100%;
-  }
-
-  input:not([type="date"]),
-  .tag-summary {
-    height: 34px;
-    padding: 6px 10px;
-    font-size: 13px;
-    box-sizing: border-box;
-  }
-
   /* tag-summaryの縦中央 */
   .tag-summary {
     display: flex;
     align-items: center;
-  }
-
-  /* ラベル位置微調整 */
-  .date-field label {
-    font-size: 10px;
-    top: -7px;
   }
 
   input,

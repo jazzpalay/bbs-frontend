@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import { refreshToken, getCsrfToken} from '@/api/auth'
 const routes = [
   { path: '/', redirect: '/signin' },
-  { path: '/signin', component: () => import('@/views/SignIn.vue') },
+  { path: '/signin', component: () => import('@/views/SignIn.vue')},
   { path: '/signup', component: () => import('@/views/SignUp.vue') },
   { path: '/signup/success', component: () => import('@/views/SignupSuccess.vue') },
   { path: '/dashboard', component: () => import('@/views/DashboardView.vue'), meta: { requiresAuth: true } },
@@ -20,33 +20,41 @@ export const router = createRouter({
 
 router.beforeEach(async (to, _, next) => {
   const authStore = useAuthStore()
-  const isAuthenticated = !!authStore.accessToken
+  let isAuthenticated = authStore.isAuthenticated
 
-  if (to.meta.requiresAuth) {
+  // 認証が必要なページ、またはサインインページの場合
+  if (to.meta.requiresAuth || to.path === '/signin') {
+    
+    // すでにメモリ上にトークンがあるなら、そのまま判定へ
     if (isAuthenticated) {
+      if (to.path === '/signin') return next('/dashboard')
       return next()
     }
 
-    if (!document.cookie.includes('XSRF-TOKEN')) {
-        await getCsrfToken();
-      }
-
+    // リフレッシュトークンで復元
     try {
+      // CSRFトークン発行
+      await getCsrfToken()
+      // リフレッシュトークン（Cookie）でアクセストークンを再発行
       const newToken = await refreshToken()
-      console.log('newToken:', newToken)
       authStore.setToken(newToken)
-      console.log('store after set:', authStore.accessToken)
+      
+      // 復元成功したらダッシュボードへ
+      if (to.path === '/signin') return next('/dashboard')
       return next()
-    } catch {
+
+    } catch (error) {
+      // 復元失敗
+      if (to.path === '/signin') {
+        return next()
+      }
+      
+      // 認証が必要なページで失敗したなら、サインインへ
+      authStore.logout()
       return next('/signin')
     }
   }
 
-  if (to.path === '/signin' && isAuthenticated) {
-    return next('/dashboard')
-  }
-    
   return next()
-  
 })
 

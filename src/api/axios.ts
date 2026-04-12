@@ -25,23 +25,36 @@ apiClient.interceptors.request.use((config) => {
   }
 
   // XSRF-TOKEN を自動付与
-  const csrfToken = getCookie('XSRF-TOKEN');
-  if (csrfToken) {
-    config.headers['X-XSRF-TOKEN'] = csrfToken;
+if (authStore.csrfToken) {
+    config.headers['X-XSRF-TOKEN'] = authStore.csrfToken
   }
 
   return config
 })
 
-
 /**
  * レスポンスで401が来たら自動リフレッシュ
  */
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const authStore = useAuthStore()
+    // CSRFトークンの受け取り処理
+    // axiosはヘッダー名を小文字にするので 'x-xsrf-token' で取得
+    const newCsrfToken = response.headers['x-xsrf-token']
+    if (newCsrfToken) {
+      authStore.setCsrfToken(newCsrfToken)
+    }
+    return response
+  },
   async (error) => {
     const originalRequest = error.config
     const authStore = useAuthStore()
+
+    // エラーでもCSRFトークンのチェック
+    const errorCsrfToken = error.response?.headers['x-xsrf-token']
+    if (errorCsrfToken) {
+      authStore.setCsrfToken(errorCsrfToken)
+    }
 
     const isAuthApi = originalRequest.url?.includes('/api/v1/auth/')
     // auth系 API なら何もしない
@@ -56,6 +69,11 @@ apiClient.interceptors.response.use(
       try {
         const newAccessToken = await refreshToken()
         authStore.setToken(newAccessToken)
+
+        // 再試行リクエストにも、最新のCSRFトークンを載せる
+        if (authStore.csrfToken) {
+          originalRequest.headers['X-XSRF-TOKEN'] = authStore.csrfToken
+        }
 
         // 新しいトークンで再実行
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`

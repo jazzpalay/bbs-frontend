@@ -29,8 +29,9 @@ export const signin = (mailAddress: string, password: string) => {
 )
 }
 
-export const getCsrfToken = () => {
-  return apiClient.get('/api/v1/auth/csrf')
+export const getCsrfToken = async () => {
+  const response = await apiClient.get('/api/v1/auth/csrf')
+  return response.headers['x-xsrf-token'];
 }
 
 export const refreshToken = async () => {

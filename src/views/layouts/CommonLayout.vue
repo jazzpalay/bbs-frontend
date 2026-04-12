@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useAuthStore } from '@/stores/auth.store' // パスは環境に合わせて調整してください
+import { useAuthStore } from '@/stores/auth.store'
 import { storeToRefs } from 'pinia'
 import { signout } from '@/api/auth'
 import { useRouter } from 'vue-router'

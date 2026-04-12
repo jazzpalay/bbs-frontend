@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
-import { refreshToken } from '@/api/auth'
+import { refreshToken, getCsrfToken} from '@/api/auth'
 const routes = [
   { path: '/', redirect: '/signin' },
   { path: '/signin', component: () => import('@/views/SignIn.vue') },
@@ -26,6 +26,10 @@ router.beforeEach(async (to, _, next) => {
     if (isAuthenticated) {
       return next()
     }
+
+    if (!document.cookie.includes('XSRF-TOKEN')) {
+        await getCsrfToken();
+      }
 
     try {
       const newToken = await refreshToken()

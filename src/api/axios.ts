@@ -1,7 +1,6 @@
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth.store'
 import { refreshToken } from '@/api/auth'
-import { getCookie } from '@/utils/cookie'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,

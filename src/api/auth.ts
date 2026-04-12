@@ -29,6 +29,10 @@ export const signin = (mailAddress: string, password: string) => {
 )
 }
 
+export const getCsrfToken = () => {
+  return apiClient.get('/api/v1/auth/csrf')
+}
+
 export const refreshToken = async () => {
   const response = await apiClient.post('/api/v1/auth/refresh')
   return response.data.jwt

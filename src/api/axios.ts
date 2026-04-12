@@ -1,11 +1,14 @@
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth.store'
 import { refreshToken } from '@/api/auth'
+import { getCookie } from '@/utils/cookie'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   timeout: 10000,
   withCredentials: true,
+  xsrfCookieName: 'XSRF-TOKEN',
+  xsrfHeaderName: 'X-XSRF-TOKEN',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -19,6 +22,12 @@ apiClient.interceptors.request.use((config) => {
 
   if (authStore.accessToken) {
     config.headers.Authorization = `Bearer ${authStore.accessToken}`
+  }
+
+  // XSRF-TOKEN を自動付与
+  const csrfToken = getCookie('XSRF-TOKEN');
+  if (csrfToken) {
+    config.headers['X-XSRF-TOKEN'] = csrfToken;
   }
 
   return config

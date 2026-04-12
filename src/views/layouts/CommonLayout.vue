@@ -9,8 +9,8 @@ const authStore = useAuthStore()
 const { isAuthenticated } = storeToRefs(authStore)
 const router = useRouter()
 const handleSignOut = async () => {
-  authStore.logout()
   await signout()
+  authStore.logout()
   router.push('/signin') // サインインページへリダイレクト
   return
 };

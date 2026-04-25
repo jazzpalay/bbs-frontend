@@ -827,6 +827,10 @@ input {
     flex-shrink: 0;
   }
 
+  .action-buttons {
+    gap: 20px;
+  }
+
   .back-link {
     font-size: 11px;
   }

@@ -141,8 +141,12 @@ const getTextColor = (bg: string) => {
             <!-- 区切り -->
             <div class="divider" />
 
+            <div v-if="tags.length === 0" class="empty-state">
+                <img src="@/assets/undraw_publish-post_7g2z.svg" alt="タグなし" class="empty-image" />
+                タグがまだありません。好きなタグを追加しましょう！
+            </div>
             <!-- 一覧（ここだけスクロール） -->
-            <div class="tag-list">
+            <div v-else class="tag-list">
                 <div v-for="tag in tags" :key="tag.tagId" class="tag-card">
                     <div class="tag-card-header">
                         <span class="tag-badge" :style="{ backgroundColor: tag.tagColor }">
@@ -316,6 +320,26 @@ select:focus {
     min-width: 0;
 }
 
+.empty-image {
+    width: min(250px, 70vw);
+    height: auto;
+    margin: 20px auto;
+    display: block;
+}
+
+.empty-state {
+    text-align: center;
+    color: #64748b;
+}
+
+.empty-state h3 {
+    margin-top: 16px;
+}
+
+.empty-state p {
+    margin-top: 8px;
+}
+
 .divider {
     margin: 20px 0;
     height: 1px;
@@ -430,7 +454,7 @@ select:focus {
 }
 
 .input-error {
-  border: 1px solid #e53935;
+    border: 1px solid #e53935;
 }
 
 .modal-overlay {
@@ -506,6 +530,10 @@ select:focus {
 
     .tag-card {
         padding: 14px 16px;
+    }
+
+    .empty-image {
+        width: min(150px, 70vw);
     }
 
 

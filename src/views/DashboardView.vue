@@ -239,18 +239,29 @@ watch(filteredLogs, () => {
             </span>
           </div>
         </div>
-        <div class="date-field">
-          <label>From</label>
-          <input type="date" v-model="startDate" />
-        </div>
-        <div class="date-field">
-          <label>To</label>
-          <input type="date" v-model="endDate" />
+          <div class="date-field">
+            <label>From</label>
+            <input type="date" v-model="startDate" />
+          </div>
+          <div class="date-field">
+            <label>To</label>
+            <input type="date" v-model="endDate" />
         </div>
       </div>
       <div ref="fadeLine" class="fade-line"></div>
       <!-- Log List -->
-      <TransitionGroup name="fade" tag="div" class="log-list">
+      <div v-if="logList.list.length === 0" class="empty-state">
+        <img src="@/assets/undraw_post-online_cjn9.svg" alt="ログなし" class="empty-image" />
+        <h3>まだログがありません</h3>
+        <p>タグとログを作成して、作業記録を始めましょう！</p>
+      </div>
+
+      <div v-else-if="filteredLogs.length === 0" class="empty-state">
+        <img src="@/assets/undraw_taken_mshk.svg" alt="ログなし" class="empty-image" />
+        <h3>条件に一致するログがありません</h3>
+        <p>検索条件やタグを変更してみてください。</p>
+      </div>
+      <TransitionGroup v-else name="fade" tag="div" class="log-list">
         <div v-for="log in filteredLogs" :key="log.logId" class="card log-card" ref="logCards"
           @click="goToDetail(log.logId)">
           <div class="log-header">
@@ -287,7 +298,7 @@ watch(filteredLogs, () => {
       </div>
     </div>
   </div>
-    <div v-if="successMessage" class="modal-overlay">
+  <div v-if="successMessage" class="modal-overlay">
     <div class="modal">
       <p>{{ successMessage }}</p>
       <div class="modal-actions">
@@ -358,6 +369,27 @@ watch(filteredLogs, () => {
   font-size: 14px;
   color: #64748b;
 }
+
+.empty-image {
+  width: min(160px, 70vw);
+  height: auto;
+  margin: 20px auto;
+  display: block;
+}
+
+.empty-state {
+  text-align: center;
+  color: #64748b;
+}
+
+.empty-state h3 {
+  margin-top: 16px;
+}
+
+.empty-state p {
+  margin-top: 8px;
+}
+
 
 .search-card {
   padding: 10px 24px;
@@ -613,6 +645,13 @@ button:hover {
 .date-field input {
   width: 100%;
   box-sizing: border-box;
+
+  height: 40px;
+  font-size: 16px;
+
+  -webkit-appearance: none;
+  appearance: none;
+
 }
 
 .date-field label {
@@ -752,6 +791,15 @@ button:hover {
   .user-name {
     font-size: 13px;
     font-weight: bold;
+  }
+
+  .header-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .empty-image {
+    width: min(120px, 70vw);
   }
 
   .tag-panel {

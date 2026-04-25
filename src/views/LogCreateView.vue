@@ -628,6 +628,18 @@ const handleSuccess = () => {
   white-space: nowrap;
 }
 
+.date-field input {
+  width: 100%;
+  box-sizing: border-box;
+
+  height: 40px;
+  font-size: 16px;
+
+  -webkit-appearance: none;
+  appearance: none;
+
+}
+
 /* ===== Editor Area ===== */
 .editor-area {
   flex: 1;

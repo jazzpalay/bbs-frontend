@@ -247,6 +247,18 @@ const handleSuccess = () => {
   width: 100%;
 }
 
+.date-field input {
+  width: 100%;
+  box-sizing: border-box;
+
+  height: 40px;
+  font-size: 16px;
+
+  -webkit-appearance: none;
+  appearance: none;
+
+}
+
 /* ===== Tag UI ===== */
 
 .tag-input-wrapper {

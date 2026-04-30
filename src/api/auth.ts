@@ -1,4 +1,4 @@
-import apiClient from './axios'
+import { apiClient, refreshClient } from './axios'
 
 interface SignupResponse {
   message: string
@@ -35,7 +35,7 @@ export const getCsrfToken = async () => {
 }
 
 export const refreshToken = async () => {
-  const response = await apiClient.post('/api/v1/auth/refresh')
+  const response = await refreshClient.post('/api/v1/auth/refresh')
   return response.data.jwt
 }
 

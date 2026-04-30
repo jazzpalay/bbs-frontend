@@ -1,4 +1,4 @@
-import apiClient from "./axios";
+import { apiClient } from "./axios";
 import { type Tag } from "@/api/tag";
 
 export interface Log {

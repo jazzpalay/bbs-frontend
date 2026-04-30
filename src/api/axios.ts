@@ -2,7 +2,7 @@ import axios from 'axios'
 import { useAuthStore } from '@/stores/auth.store'
 import { refreshToken } from '@/api/auth'
 
-const apiClient = axios.create({
+const baseConfig = {
   baseURL: import.meta.env.VITE_API_URL,
   timeout: 10000,
   withCredentials: true,
@@ -11,7 +11,12 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json'
   }
-})
+}
+
+//jwtチェックで401が返ってきたときは、リフレッシュトークンでアクセストークンを再発行してから再試行するaxiosインスタンス
+export const apiClient = axios.create(baseConfig)
+//リフレッシュAPI専用
+export const refreshClient = axios.create(baseConfig)
 
 /**
  * リクエスト前にアクセストークンを自動付与
@@ -89,4 +94,13 @@ apiClient.interceptors.response.use(
   }
 )
 
-export default apiClient
+// リフレッシュトークンAPIは、アクセストークンがない状態でもCSRFトークンさえあれば成功する想定なので、リクエスト前にCSRFトークンだけは載せる
+refreshClient.interceptors.request.use((config) => {
+  const authStore = useAuthStore()
+
+  if (authStore.csrfToken) {
+    config.headers['X-XSRF-TOKEN'] = authStore.csrfToken
+  }
+
+  return config
+})

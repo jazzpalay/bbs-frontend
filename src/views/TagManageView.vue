@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import CommonLayout from '@/views/layouts/CommonLayout.vue'
+import SkeletonTagCard from '@/components/skeleton/SkeletonTagCard.vue'
 import { getTags, createTag, updateTag, deleteTag, type Tag } from '@/api/tag'
 import { ref, onMounted } from 'vue'
 import { AxiosError } from 'axios'
@@ -18,6 +19,7 @@ const updateTargetTag = ref<Tag | null>(null)
 const createError = ref('')
 const updateError = ref('')
 const successMessage = ref('')
+const isLoading = ref(true)
 
 onMounted(async () => {
     try {
@@ -25,6 +27,8 @@ onMounted(async () => {
         tags.value = response.list
     } catch (e) {
         console.error('タグ取得失敗', e)
+    }finally {
+        isLoading.value = false
     }
 })
 
@@ -141,7 +145,10 @@ const getTextColor = (bg: string) => {
             <!-- 区切り -->
             <div class="divider" />
 
-            <div v-if="tags.length === 0" class="empty-state">
+            <div v-if="isLoading">
+                <SkeletonTagCard v-for="n in 5" :key="n" />
+            </div>
+            <div v-else-if="tags.length === 0" class="empty-state">
                 <img src="@/assets/undraw_publish-post_7g2z.svg" alt="タグなし" class="empty-image" />
                 タグがまだありません。好きなタグを追加しましょう！
             </div>

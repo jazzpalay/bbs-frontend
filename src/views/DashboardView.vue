@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import CommonLayout from '@/views/layouts/CommonLayout.vue'
+import SkeletonLogCard from '@/components/skeleton/SkeletonLogCard.vue'
 import { onMounted, ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { getTags, type Tag } from '@/api/tag'
@@ -20,6 +21,7 @@ const logList = ref<LogList>({ userId: '', list: [] })
 const deleteTargetId = ref('')
 const showDeleteModal = ref(false)
 const successMessage = ref('')
+const isLoading = ref(true)
 
 let observer: IntersectionObserver
 
@@ -38,6 +40,8 @@ onMounted(async () => {
 
   } catch (e) {
     console.error('初期データ取得失敗', e)
+  } finally {
+    isLoading.value = false
   }
 
   observer = new IntersectionObserver(
@@ -239,23 +243,25 @@ watch(filteredLogs, () => {
             </span>
           </div>
         </div>
-          <div class="date-field">
-            <label>From</label>
-            <input type="date" v-model="startDate" />
-          </div>
-          <div class="date-field">
-            <label>To</label>
-            <input type="date" v-model="endDate" />
+        <div class="date-field">
+          <label>From</label>
+          <input type="date" v-model="startDate" />
+        </div>
+        <div class="date-field">
+          <label>To</label>
+          <input type="date" v-model="endDate" />
         </div>
       </div>
       <div ref="fadeLine" class="fade-line"></div>
       <!-- Log List -->
-      <div v-if="logList.list.length === 0" class="empty-state">
+      <div v-if="isLoading">
+        <SkeletonLogCard v-for="i in 5" :key="i" />
+      </div>
+      <div v-else-if="logList.list.length === 0" class="empty-state">
         <img src="@/assets/undraw_post-online_cjn9.svg" alt="ログなし" class="empty-image" />
         <h3>まだログがありません</h3>
         <p>タグとログを作成して、作業記録を始めましょう！</p>
       </div>
-
       <div v-else-if="filteredLogs.length === 0" class="empty-state">
         <img src="@/assets/undraw_taken_mshk.svg" alt="ログなし" class="empty-image" />
         <h3>条件に一致するログがありません</h3>

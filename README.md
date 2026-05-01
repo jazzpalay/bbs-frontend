@@ -1,5 +1,32 @@
-# Vue 3 + TypeScript + Vite
+# 作業ログアプリ（Frontend）
+作業ログをMarkdown形式で記録・管理できるアプリのフロントエンドです
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+## 技術スタック
+- Vue 3
+- TypeScript
+- Vite
+- Pinia（状態管理）
+- Axios（API通信）
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+## 主な機能
+
+- ユーザー認証（サインアップ / サインイン）
+- ログ作成・編集（Markdown対応）
+- タグ管理機能
+- ログ一覧のタイトル、日付、タグでのフィルタリング
+
+## フロントエンドの工夫
+
+- Markdown編集補助（選択範囲に対して記法を挿入）
+- リアルタイムプレビュー機能
+- API通信時のローディング状態をスケルトンUIで表現
+- axios interceptorによる認証エラー時の自動リフレッシュ処理
+- CSRF対策として、トークンをinterceptorで自動付与
+
+## セットアップ
+bash
+npm install
+npm run dev
+
+## Backend
+[https://github.com/xxx/backend](https://github.com/jazzpalay/bbs-backend)

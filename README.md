@@ -22,6 +22,7 @@
 - API通信時のローディング状態をスケルトンUIで表現
 - axios interceptorによる認証エラー時の自動リフレッシュ処理
 - CSRF対策として、トークンをinterceptorで自動付与
+- DOMPurifyによるマークダウン部のサニタイズ
 
 ## セットアップ
 bash  

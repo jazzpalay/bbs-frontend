@@ -24,9 +24,9 @@
 - CSRF対策として、トークンをinterceptorで自動付与
 
 ## セットアップ
-bash
-npm install
+bash  
+npm install  
 npm run dev
 
 ## Backend
-[https://github.com/xxx/backend](https://github.com/jazzpalay/bbs-backend)
+[https://github.com/jazzpalay/backend](https://github.com/jazzpalay/bbs-backend)

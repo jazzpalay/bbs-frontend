@@ -27,7 +27,7 @@ onMounted(async () => {
         tags.value = response.list
     } catch (e) {
         console.error('タグ取得失敗', e)
-    }finally {
+    } finally {
         isLoading.value = false
     }
 })
@@ -185,7 +185,7 @@ const getTextColor = (bg: string) => {
                     キャンセル
                 </button>
                 <button class="primary-btn" @click="remove(deleteTargetId!)">
-                    削除する
+                    削除
                 </button>
             </div>
         </div>
@@ -505,6 +505,12 @@ select:focus {
 
 .back-link:hover {
     opacity: 0.7;
+}
+
+.primary-btn {
+    background-color: #ffffff;
+    color: #000;
+    border: 1px solid #ccc;
 }
 
 @media (max-width: 600px) {

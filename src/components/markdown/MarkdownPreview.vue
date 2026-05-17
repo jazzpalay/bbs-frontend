@@ -18,7 +18,11 @@ const props = defineProps<{
 const renderedMarkdown = computed(() => {
   const rawHtml = marked.parse(props.content) as string
 
-  return DOMPurify.sanitize(rawHtml)
+  //blobは許可
+  return DOMPurify.sanitize(rawHtml, {
+    ALLOWED_URI_REGEXP:
+      /^(?:(?:https?|mailto|blob):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
+  })
 })
 
 watch(renderedMarkdown, async () => {
@@ -78,6 +82,15 @@ watch(renderedMarkdown, async () => {
   padding: 18px;
   border-radius: 8px;
 
+}
+
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+
+  border-radius: 12px;
+  margin: 16px 0;
 }
 
 .markdown-body code {

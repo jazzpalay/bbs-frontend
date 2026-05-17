@@ -13,6 +13,7 @@ import MarkdownHelp from "@/components/markdown/MarkdownHelp.vue"
 const router = useRouter()
 const route = useRoute()
 const logId = route.params.logId as string | undefined
+const savedLogId = ref<string>('')
 const isEdit = !!logId
 const title = ref('')
 const logDate = ref<string>(new Date().toISOString().split('T')[0]!)
@@ -27,6 +28,10 @@ const titleError = ref(false)
 const contentError = ref(false)
 const dateError = ref(false)
 let isSyncing = false
+
+const markdownEditorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null)
+const tempImageMap = new Map<string, File>()
+const blobUrls = ref<string[]>([])
 
 const activeTab = ref<'editor' | 'preview'>('editor')
 const toggleTab = (tab: 'editor' | 'preview') => {
@@ -81,6 +86,10 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
+    // blob URL をクリーンアップ
+    blobUrls.value.forEach(url => {
+    URL.revokeObjectURL(url)
+  })
 })
 
 const toggleTagPanel = () => { isTagPanelOpen.value = !isTagPanelOpen.value }
@@ -218,10 +227,28 @@ const insertLink = () => {
   })
 }
 
+// 画像貼り付け処理
+const handlePasteImage = (file: File) => {
+  const tempUrl = URL.createObjectURL(file)
+
+  //blob URL 一覧管理
+  blobUrls.value.push(tempUrl)
+
+  tempImageMap.set(tempUrl, file)
+
+  const markdown =
+    `![${file.name}](${tempUrl})`
+
+  markdownEditorRef.value?.insertAtCursor(
+    `\n${markdown}\n`
+  )
+}
+
 const clearTags = () => { selectedTags.value = [] }
 const openHelp = () => { isHelpOpen.value = true }
 const closeHelp = () => { isHelpOpen.value = false }
 
+// 保存or更新処理
 const handleSubmit = async () => {
   if (!title.value.trim()) {
     titleError.value = true
@@ -252,13 +279,14 @@ const handleSubmit = async () => {
       successMessage.value = 'ログを更新しました'
     } else {
       // 新規作成処理
-      const newLog = await createLog(
+      const newLogId = await createLog(
         title.value,
         content.value,
         logDate.value,
         selectedTags.value.map(tag => tag.tagId)
       );
-      console.log('ログの作成に成功しました。:', newLog);
+      console.log('ログの作成に成功しました。:', newLogId);
+      savedLogId.value = newLogId
       successMessage.value = 'ログを保存しました'
     }
   } catch (error) {
@@ -267,9 +295,11 @@ const handleSubmit = async () => {
     createError.value = err?.response?.data?.message || '作成に失敗しました'
   }
 }
+
 const handleSuccess = () => {
   successMessage.value = ''
-  router.push('/dashboard')
+  const targetLogId = savedLogId.value || logId
+  router.push(`/LogDetail/${targetLogId}`)
 }
 </script>
 
@@ -343,7 +373,7 @@ const handleSuccess = () => {
         <!-- エディタとプレビューの表示を条件付けに -->
         <div class="editor-area">
           <div :class="['pane', 'editor-pane', { hidden: activeTab === 'preview' }]" ref="editorRef">
-            <MarkdownEditor v-model="content" @scroll="(scrollTop) => syncScroll('editor', scrollTop)"
+            <MarkdownEditor v-model="content"  ref="markdownEditorRef" @paste-image="handlePasteImage"  @scroll="(scrollTop) => syncScroll('editor', scrollTop)"
               :error="contentError" />
             <div class="editor-toolbar">
               <button class="toolbar-btn" @click="insertMarkdown('**', '**', 'Bold')" title="Bold">
@@ -423,7 +453,7 @@ const handleSuccess = () => {
     <div class="modal">
       <p>{{ successMessage }}</p>
       <div class="modal-actions">
-        <button class="outline-btn" @click="handleSuccess">
+        <button class="outline-btn" @click="handleSuccess()">
           閉じる
         </button>
       </div>

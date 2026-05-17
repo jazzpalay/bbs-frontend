@@ -277,14 +277,14 @@ watch(filteredLogs, () => {
           <div class="log-tags">
             <span v-for="tag in log.tags" :key="tag.tagId" class="tag" :style="getLogTagStyle(tag)">{{ tag.tagName
             }}</span>
-            <div class="log-actions">
-              <button class="action-btn edit" title="編集" @click.stop="handleEdit(log.logId)">
-                <span class="material-symbols-outlined">edit</span>
-              </button>
-              <button class="action-btn delete" title="削除" @click.stop="openDelete(log.logId)">
-                <span class="material-symbols-outlined">delete</span>
-              </button>
-            </div>
+          </div>
+          <div class="log-actions">
+            <button class="action-btn edit" title="編集" @click.stop="handleEdit(log.logId)">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button class="action-btn delete" title="削除" @click.stop="openDelete(log.logId)">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
           </div>
         </div>
       </TransitionGroup>
@@ -419,7 +419,8 @@ watch(filteredLogs, () => {
 .log-card {
   cursor: pointer;
   position: relative;
-  padding-bottom: 20px
+  padding-bottom: 20px;
+  min-height: 60px;
 }
 
 .log-actions {
@@ -906,6 +907,7 @@ button:hover {
 
   .log-card {
     padding: 10px 15px;
+    min-height: 50px;
   }
 
   .log-header h3 {

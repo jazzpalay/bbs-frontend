@@ -244,11 +244,6 @@ const handlePasteImage = (file: File) => {
   )
 }
 
-const extractBlobUrls = (markdown: string): string[] => {
-  const regex = /blob:[^)]+/g
-  return markdown.match(regex) || []
-}
-
 const clearTags = () => { selectedTags.value = [] }
 const openHelp = () => { isHelpOpen.value = true }
 const closeHelp = () => { isHelpOpen.value = false }

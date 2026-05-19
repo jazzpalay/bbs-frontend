@@ -86,8 +86,8 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
-    // blob URL をクリーンアップ
-    blobUrls.value.forEach(url => {
+  // blob URL をクリーンアップ
+  blobUrls.value.forEach(url => {
     URL.revokeObjectURL(url)
   })
 })
@@ -244,6 +244,58 @@ const handlePasteImage = (file: File) => {
   )
 }
 
+// Markdown 内の blob URL を抽出する関数
+const extractBlobUrls = (markdown: string): string[] => {
+  const regex = /blob:[^)]+/g
+  return markdown.match(regex) || []
+}
+
+// FormData作成関数
+const createFormData = (
+  blobUrls: string[]
+): FormData => {
+
+  const uploads: {
+    blobUrl: string
+    image: File
+  }[] = []
+
+  for (const blobUrl of blobUrls) {
+    const image = tempImageMap.get(blobUrl)
+
+    if (!image) continue
+
+    uploads.push({
+      blobUrl,
+      image
+    })
+  }
+
+  if (uploads.length === 0) {
+    return new FormData()
+  }
+
+  const metadata = uploads.map(upload => ({
+    blobUrl: upload.blobUrl
+  }))
+
+  const formData = new FormData()
+
+  formData.append(
+    'metadata',
+    new Blob(
+      [JSON.stringify(metadata)],
+      { type: 'application/json' }
+    )
+  )
+
+  uploads.forEach(upload => {
+    formData.append('images', upload.image)
+  })
+
+  return formData
+}
+
 const clearTags = () => { selectedTags.value = [] }
 const openHelp = () => { isHelpOpen.value = true }
 const closeHelp = () => { isHelpOpen.value = false }
@@ -266,7 +318,13 @@ const handleSubmit = async () => {
   try {
     successMessage.value = ''
     createError.value = ''
+
+    // 画像アップロードの準備
+    const blobUrls = extractBlobUrls(content.value)
+    const formData = createFormData(blobUrls)
+
     if (isEdit) {
+
       // 更新処理
       await updateLog(
         logId,
@@ -277,17 +335,25 @@ const handleSubmit = async () => {
       );
       console.log('ログの更新に成功しました。');
       successMessage.value = 'ログを更新しました'
+
     } else {
+
       // 新規作成処理
+      const logForm = {
+        title: title.value,
+        content: content.value,
+        logDate: logDate.value,
+        tagIds: selectedTags.value.map(tag => tag.tagId)
+      }
+      formData.append('logForm', new Blob([JSON.stringify(logForm)], { type: 'application/json' }))
       const newLogId = await createLog(
-        title.value,
-        content.value,
-        logDate.value,
-        selectedTags.value.map(tag => tag.tagId)
+        formData
       );
+
       console.log('ログの作成に成功しました。:', newLogId);
       savedLogId.value = newLogId
       successMessage.value = 'ログを保存しました'
+
     }
   } catch (error) {
     console.error('ログの作成に失敗しました。:', error);
@@ -373,8 +439,8 @@ const handleSuccess = () => {
         <!-- エディタとプレビューの表示を条件付けに -->
         <div class="editor-area">
           <div :class="['pane', 'editor-pane', { hidden: activeTab === 'preview' }]" ref="editorRef">
-            <MarkdownEditor v-model="content"  ref="markdownEditorRef" @paste-image="handlePasteImage"  @scroll="(scrollTop) => syncScroll('editor', scrollTop)"
-              :error="contentError" />
+            <MarkdownEditor v-model="content" ref="markdownEditorRef" @paste-image="handlePasteImage"
+              @scroll="(scrollTop) => syncScroll('editor', scrollTop)" :error="contentError" />
             <div class="editor-toolbar">
               <button class="toolbar-btn" @click="insertMarkdown('**', '**', 'Bold')" title="Bold">
                 <span class="icon">B</span>

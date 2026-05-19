@@ -85,12 +85,14 @@ watch(renderedMarkdown, async () => {
 }
 
 .markdown-body img {
-  max-width: 100%;
+  max-width: min(100%, 900px);
+  width: 100%;
   height: auto;
+
   display: block;
 
   border-radius: 12px;
-  margin: 16px 0;
+  margin: 16px;
 }
 
 .markdown-body code {

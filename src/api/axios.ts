@@ -8,9 +8,6 @@ const baseConfig = {
   withCredentials: true,
   xsrfCookieName: 'XSRF-TOKEN',
   xsrfHeaderName: 'X-XSRF-TOKEN',
-  headers: {
-    'Content-Type': 'application/json'
-  }
 }
 
 //jwtチェックで401が返ってきたときは、リフレッシュトークンでアクセストークンを再発行してから再試行するaxiosインスタンス

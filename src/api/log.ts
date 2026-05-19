@@ -32,13 +32,10 @@ export const getLogDetail = async (logId: string): Promise<LogDetail> => {
   return response.data;
 };
 
-export const createLog = async (title: string, content: string, logDate: string, tagIds: string[]): Promise<string> => {
-  const response = await apiClient.post("/api/v1/logs/create", {
-    title,
-    content,
-    logDate,
-    tagIds
-  });
+export const createLog = async (formdata: FormData): Promise<string> => {
+  const response = await apiClient.post("/api/v1/logs/create", 
+    formdata
+  );
   return response.data;
 };
 

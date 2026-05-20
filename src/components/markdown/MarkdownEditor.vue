@@ -15,6 +15,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'scroll': [scrollTop: number]
   'paste-image': [file: File]
+  'add-image': [file: File]
 }>()
 
 const handleScroll = (e: Event) => {
@@ -31,10 +32,23 @@ const handlePaste = (e: ClipboardEvent) => {
       const file = item.getAsFile()
       if (!file) continue
 
-      emit('paste-image', file)
+      emit('add-image', file)
       e.preventDefault()
       }
     }
+}
+
+const handleDrop = (e: DragEvent) => {
+  e.preventDefault()
+
+  const files = e.dataTransfer?.files
+  if (!files) return
+
+  for (const file of files) {
+    if (file.type.startsWith('image/')) {
+      emit('add-image', file)
+    }
+  }
 }
 
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
@@ -75,6 +89,7 @@ defineExpose({
     :class="{ 'error': props.error }"
     @scroll="handleScroll"
     @paste="handlePaste"
+    @drop="handleDrop"
     placeholder="Markdownを書いてください" 
   />
 </template>

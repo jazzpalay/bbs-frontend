@@ -32,6 +32,13 @@ let isSyncing = false
 const markdownEditorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null)
 const tempImageMap = new Map<string, File>()
 const blobUrls = ref<string[]>([])
+const fileInput = ref<HTMLInputElement | null>(null)
+const MAX_FILE_SIZE = 5 * 1024 * 1024
+const ALLOWED_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp'
+]
 
 const activeTab = ref<'editor' | 'preview'>('editor')
 const toggleTab = (tab: 'editor' | 'preview') => {
@@ -227,8 +234,36 @@ const insertLink = () => {
   })
 }
 
-// 画像貼り付け処理
-const handlePasteImage = (file: File) => {
+const insertImage = () => {
+  fileInput.value?.click()
+}
+
+const handleFileSelect = (e: Event) => {
+  const input = e.target as HTMLInputElement
+  if (!input.files || input.files.length === 0) return
+
+  const file = input.files[0]
+  if (!file) return
+  // サイズチェック
+  if (file.size > MAX_FILE_SIZE) {
+    createError.value = 'ファイルサイズは5MB以下にしてください'
+    return
+  }
+
+  // MIME type チェック
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    createError.value = '許可されていないファイル形式です'
+    return
+  }
+
+  handleAddImage(file)
+
+  // ファイル選択後は input をリセットしておく
+  input.value = ''
+}
+
+// 画像追加処理
+const handleAddImage = (file: File) => {
   const tempUrl = URL.createObjectURL(file)
 
   //blob URL 一覧管理
@@ -440,7 +475,7 @@ const handleSuccess = () => {
         <!-- エディタとプレビューの表示を条件付けに -->
         <div class="editor-area">
           <div :class="['pane', 'editor-pane', { hidden: activeTab === 'preview' }]" ref="editorRef">
-            <MarkdownEditor v-model="content" ref="markdownEditorRef" @paste-image="handlePasteImage"
+            <MarkdownEditor v-model="content" ref="markdownEditorRef" @add-image="handleAddImage"
               @scroll="(scrollTop) => syncScroll('editor', scrollTop)" :error="contentError" />
             <div class="editor-toolbar">
               <button class="toolbar-btn" @click="insertMarkdown('**', '**', 'Bold')" title="Bold">
@@ -485,6 +520,11 @@ const handleSuccess = () => {
               </button>
               <button class="toolbar-btn" @click="insertLink()" title="Link">
                 <span class="icon">🔗</span>
+              </button>
+
+              <input ref="fileInput" type="file" accept="image/*" hidden @change="handleFileSelect" />
+              <button class="toolbar-btn" @click="insertImage()" title="画像を追加">
+                <span class="icon">+</span>
               </button>
             </div>
           </div>

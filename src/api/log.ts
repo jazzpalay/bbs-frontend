@@ -39,13 +39,11 @@ export const createLog = async (formdata: FormData): Promise<string> => {
   return response.data;
 };
 
-export const updateLog = async (logId: string, title: string, content: string, logDate: string, tagIds: string[]): Promise<LogDetail> => {
-  const response = await apiClient.put(`/api/v1/logs/${logId}`, {
-    title,
-    content,
-    logDate,
-    tagIds
-  });
+export const updateLog = async (logId: string,formdata: FormData): Promise<void> => {
+  console.log(formdata.get("logId"));
+  const response = await apiClient.put(`/api/v1/logs/${logId}`, 
+  formdata
+);  
   return response.data;
 };
 

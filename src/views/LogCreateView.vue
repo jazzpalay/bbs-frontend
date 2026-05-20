@@ -326,13 +326,14 @@ const handleSubmit = async () => {
     if (isEdit) {
 
       // 更新処理
-      await updateLog(
-        logId,
-        title.value,
-        content.value,
-        logDate.value,
-        selectedTags.value.map(tag => tag.tagId)
-      );
+      const logForm = {
+        title: title.value,
+        content: content.value,
+        logDate: logDate.value,
+        tagIds: selectedTags.value.map(tag => tag.tagId)
+      }
+      formData.append('logForm', new Blob([JSON.stringify(logForm)], { type: 'application/json' }))
+      await updateLog(logId!, formData)
       console.log('ログの更新に成功しました。');
       successMessage.value = 'ログを更新しました'
 

@@ -149,4 +149,18 @@ watch(renderedMarkdown, async () => {
 .copy-btn:hover {
   background: rgba(255, 255, 255, 0.15);
 }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+}
+
+th {
+  background: #f5f5f5;
+}
 </style>

@@ -234,6 +234,17 @@ const insertLink = () => {
   })
 }
 
+const insertTable = () => {
+  const tableMarkdown =
+`| Column1 | Column2 | Column3 |
+| --- | --- | --- |
+| Cell1 | Cell2 | Cell3 |
+| Cell4 | Cell5 | Cell6 |
+`
+
+  insertMarkdown('', '', tableMarkdown)
+}
+
 const insertImage = () => {
   fileInput.value?.click()
 }
@@ -508,18 +519,21 @@ const handleSuccess = () => {
               <button class="toolbar-btn" @click="insertMarkdown('## ', '\n', 'Heading 2')" title="Heading 2">
                 <span class="icon">H2</span>
               </button>
-              <button class="toolbar-btn" @click="insertMarkdown('> ', '\n', 'Quote')" title="Quote">
-                <span class="icon">&gt;</span>
+              <button class="toolbar-btn" @click="insertTable" title="Table">
+                <span class="icon">▦</span>
               </button>
               <div class="toolbar-divider"></div>
               <button class="toolbar-btn" @click="insertList('ul')" title="Unordered List">
-                <span class="icon">•</span>
+                <span class="icon">☰</span>
               </button>
               <button class="toolbar-btn" @click="insertList('ol')" title="Ordered List">
-                <span class="icon">1</span>
+                <span class="icon">1☰</span>
               </button>
               <button class="toolbar-btn" @click="insertLink()" title="Link">
                 <span class="icon">🔗</span>
+              </button>
+              <button class="toolbar-btn" @click="insertMarkdown('- [ ] To Do \n- [x] Completed ', '\n', '')" title="Checkbox">
+                <span class="icon">☑</span>
               </button>
 
               <input ref="fileInput" type="file" accept="image/*" hidden @change="handleFileSelect" />
